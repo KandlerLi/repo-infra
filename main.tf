@@ -7,12 +7,7 @@ module "repo" {
 
   for_each = local.config
 
-  repository_name = each.key
-  github_owner    = "dummy"
-  action_variables = try(each.value.action_variables, {})
-}
-
-import {
-  to = module.repo["dyndns"].github_actions_repository_permissions.this
-  id = "dyndns"
+  repository_name      = each.key
+  action_variables     = try(each.value.action_variables, {})
+  sha_pinning_required = try(each.value.sha_pinning_required, false)
 }

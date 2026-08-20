@@ -26,42 +26,42 @@ resource "github_repository_ruleset" "default_branch" {
   }
 
   rules {
-    deletion = true
-    non_fast_forward = true
+    deletion                = true
+    non_fast_forward        = true
     required_linear_history = false
   }
 }
 
 resource "github_actions_variable" "aws_account_id" {
-  repository       = github_repository.this.name
-  variable_name    = "AWS_ACCOUNT_ID"
-  value            = "853955636908"
+  repository    = github_repository.this.name
+  variable_name = "AWS_ACCOUNT_ID"
+  value         = "853955636908"
 }
 
 resource "github_actions_variable" "aws_plan_role_arn" {
-  repository       = github_repository.this.name
-  variable_name    = "AWS_PLAN_ROLE_ARN"
-  value            = "arn:aws:iam::853955636908:role/${github_repository.this.name}-github-plan"
+  repository    = github_repository.this.name
+  variable_name = "AWS_PLAN_ROLE_ARN"
+  value         = "arn:aws:iam::853955636908:role/${github_repository.this.name}-github-plan"
 }
 
 resource "github_actions_variable" "aws_role_arn" {
-  repository       = github_repository.this.name
-  variable_name    = "AWS_ROLE_ARN"
-  value            = "arn:aws:iam::853955636908:role/${github_repository.this.name}-github-actions"
+  repository    = github_repository.this.name
+  variable_name = "AWS_ROLE_ARN"
+  value         = "arn:aws:iam::853955636908:role/${github_repository.this.name}-github-actions"
 }
 
 resource "github_actions_variable" "additional" {
   for_each = var.action_variables
 
-  repository       = github_repository.this.name
-  variable_name    = each.key
-  value            = each.value
+  repository    = github_repository.this.name
+  variable_name = each.key
+  value         = each.value
 }
 
 
 resource "github_repository_environment" "production" {
-  environment         = "production"
-  repository          = github_repository.this.name
+  environment = "production"
+  repository  = github_repository.this.name
   reviewers {
     users = [24520951]
   }
@@ -72,15 +72,22 @@ resource "github_repository_environment" "production" {
 }
 
 resource "github_actions_repository_permissions" "this" {
-  allowed_actions = "selected"
+  allowed_actions      = "selected"
+  sha_pinning_required = var.sha_pinning_required
   allowed_actions_config {
     github_owned_allowed = false
-    patterns_allowed     = [
+    patterns_allowed = [
       "actions/checkout@*",
       "aws-actions/configure-aws-credentials@*",
       "hashicorp/setup-terraform@*"
     ]
-    verified_allowed     = false
+    verified_allowed = false
   }
   repository = github_repository.this.name
+}
+
+resource "github_workflow_repository_permissions" "this" {
+  repository                       = github_repository.this.name
+  default_workflow_permissions     = "read"
+  can_approve_pull_request_reviews = false
 }
