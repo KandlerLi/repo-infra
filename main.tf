@@ -7,7 +7,6 @@ module "repo" {
 
   for_each = local.config
 
-  repository_name      = each.key
-  action_variables     = try(each.value.action_variables, {})
-  sha_pinning_required = try(each.value.sha_pinning_required, false)
+  repository_name  = each.key
+  action_variables = try(each.value.action_variables, {})
 }

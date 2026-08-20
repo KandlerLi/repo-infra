@@ -73,7 +73,7 @@ resource "github_repository_environment" "production" {
 
 resource "github_actions_repository_permissions" "this" {
   allowed_actions      = "selected"
-  sha_pinning_required = var.sha_pinning_required
+  sha_pinning_required = true
   allowed_actions_config {
     github_owned_allowed = false
     patterns_allowed = [

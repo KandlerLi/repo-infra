@@ -1,7 +1,5 @@
 dyndns:
   action_variables:
     ROUTE53_ZONE_ID: Z07879811I86VC8PAL8HX
-  sha_pinning_required: true
 
-testing:
-  sha_pinning_required: false
+testing: {}

@@ -31,15 +31,16 @@ deliberate decision.
   owner review
 - `github_actions_repository_permissions` — the allowed-Actions allowlist
   (`actions/checkout@*`, `aws-actions/configure-aws-credentials@*`,
-  `hashicorp/setup-terraform@*`) and `sha_pinning_required`
+  `hashicorp/setup-terraform@*`) and `sha_pinning_required` (hardcoded to
+  `true` for every managed repository — see
+  `dyndns/scripts/protect-repository.sh` for the same baseline applied
+  manually before this root existed)
 - `github_workflow_repository_permissions` — default workflow token
   permissions and PR-approval restriction
 
-`sha_pinning_required` had been toggled manually per-repository through the
-GitHub web UI before this Terraform root existed (`true` on `dyndns`,
-`false` on `testing`); it is now set explicitly per repo in `config.yml`.
-The `github_workflow_repository_permissions` resource was similarly only set
-manually and has been imported into state.
+`sha_pinning_required` and `github_workflow_repository_permissions` had both
+been set manually through the GitHub web UI before this Terraform root
+existed and have since been imported into state.
 
 Not managed here: the account-wide GitHub OIDC provider and the AWS
 plan/apply IAM roles/policies referenced by the Actions variables above —
