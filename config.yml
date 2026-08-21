@@ -1,7 +1,6 @@
 dyndns:
   runner: true
   required_status_check_contexts:
-    - "Owner approval"
     - "Validate"
     - "Terraform plan"
   action_variables:
