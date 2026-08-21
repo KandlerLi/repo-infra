@@ -6,29 +6,40 @@ resource "github_repository" "this" {
   has_projects           = true
   delete_branch_on_merge = true
   has_issues             = true
+  has_wiki               = false
 
   allow_merge_commit  = false
   allow_rebase_merge  = false
   allow_update_branch = true
+  allow_auto_merge    = false
 }
 
-resource "github_repository_ruleset" "default_branch" {
-  name        = "Main"
-  repository  = github_repository.this.name
-  target      = "branch"
-  enforcement = "disabled"
+resource "github_repository_vulnerability_alerts" "this" {
+  repository = github_repository.this.name
+  enabled    = true
+}
 
-  conditions {
-    ref_name {
-      include = ["~DEFAULT_BRANCH"]
-      exclude = []
-    }
+resource "github_branch_protection" "this" {
+  repository_id = github_repository.this.node_id
+  pattern       = "main"
+
+  enforce_admins                  = true
+  require_conversation_resolution = true
+  require_signed_commits          = true
+  required_linear_history         = true
+  allows_force_pushes             = false
+  allows_deletions                = false
+
+  required_pull_request_reviews {
+    required_approving_review_count = 0
+    require_code_owner_reviews      = false
+    require_last_push_approval      = false
+    dismiss_stale_reviews           = false
   }
 
-  rules {
-    deletion                = true
-    non_fast_forward        = true
-    required_linear_history = false
+  required_status_checks {
+    strict   = true
+    contexts = var.required_status_check_contexts
   }
 }
 

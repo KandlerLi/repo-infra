@@ -24,13 +24,38 @@ non-default merge settings, unrestricted Actions permissions) but is
 for that repository. Do not add it to `config.yml` without a separate,
 deliberate decision.
 
+Branch protection is a **hardcoded baseline applied to every managed
+repository**, not opt-in — every `config.yml` entry gets one, matching the
+existing hardcoded-for-everyone treatment of `sha_pinning_required`. The one
+per-repository knob is `required_status_check_contexts`, a list of workflow
+job/status names that must pass before merging (empty by default, since a
+repository with no CI has nothing to require):
+
+```yaml
+dyndns:
+  required_status_check_contexts:
+    - "Owner approval"
+    - "Validate"
+    - "Terraform plan"
+```
+
 ## What the module manages per repository
 
 GitHub side (always):
 
-- `github_repository` — visibility, merge/branch settings
-- `github_repository_ruleset` — a default-branch ruleset (currently
-  `enforcement = "disabled"`)
+- `github_repository` — visibility, merge/branch settings, wiki disabled,
+  auto-merge disabled
+- `github_repository_vulnerability_alerts` — Dependabot security alerts
+  enabled
+- `github_branch_protection` — a hardcoded baseline applied to every managed
+  repository: no force-pushes or deletions on the default branch, required
+  linear history, required signed commits, required conversation
+  resolution, admin enforcement (nobody, including the owner, can bypass),
+  `required_approving_review_count = 0` native reviews (GitHub cannot let a
+  sole owner approve their own PR — see `dyndns`'s `.github/CODEOWNERS`),
+  plus a strict required-status-checks list from each repository's
+  `required_status_check_contexts` in `config.yml` (empty for repositories
+  with no CI, like `testing`)
 - `github_actions_variable` — repo-specific variables from `config.yml`, plus
   `AWS_ACCOUNT_ID`/`AWS_ROLE_ARN`/`AWS_PLAN_ROLE_ARN` when AWS access is
   configured (see below)
@@ -39,11 +64,21 @@ GitHub side (always):
 - `github_actions_repository_permissions` — the allowed-Actions allowlist
   (`actions/checkout@*`, `aws-actions/configure-aws-credentials@*`,
   `hashicorp/setup-terraform@*`) and `sha_pinning_required` (hardcoded to
-  `true` for every managed repository — see
-  `dyndns/scripts/protect-repository.sh` for the same baseline applied
-  manually before this root existed)
+  `true` for every managed repository)
 - `github_workflow_repository_permissions` — default workflow token
   permissions and PR-approval restriction
+
+**Not managed here**: `pull_request_creation_policy` (the setting that
+actually restricts who can *open* a PR at all — GitHub added this in Feb
+2026 and `terraform-provider-github` has no resource for it yet; tracked as
+unimplemented feature requests
+[#3251](https://github.com/integrations/terraform-provider-github/issues/3251)
+and
+[#3198](https://github.com/integrations/terraform-provider-github/issues/3198)).
+It's set once, per repository, by `dyndns/scripts/protect-repository.sh` —
+the one remaining piece of that script, kept only because there is
+currently no IaC path for this specific field. Revisit once the provider
+adds support.
 
 AWS side (only for repositories with an entry in `aws_policies.tf`, e.g.
 `dyndns`):
@@ -122,7 +157,13 @@ repositories exist and what they get.
    step is zero-diff.
 3. Add temporary `import { to = ..., id = ... }` blocks in `main.tf` for each
    resource that already exists live. IAM role import IDs are the role name;
-   inline role policy import IDs are `<role-name>:<policy-name>`.
+   inline role policy import IDs are `<role-name>:<policy-name>`; a
+   `github_branch_protection` import ID is `<repository>:<pattern>` (e.g.
+   `dyndns:main`) — **use `repository_id = github_repository.this.node_id`
+   in the resource, not `.name`**, or the import will show a forced
+   replacement on the next plan (the provider normalizes `repository_id` to
+   the GraphQL node ID once a protection rule exists, and a name-vs-node_id
+   mismatch reads as a value change).
 4. Run `terraform plan` and confirm it shows only imports — zero creates,
    changes, or destroys beyond expected cosmetic attribute updates (e.g. an
    IAM role `description` field). Any unexpected diff — especially to a

@@ -8,6 +8,12 @@ variable "action_variables" {
   type        = map(string)
 }
 
+variable "required_status_check_contexts" {
+  description = "Required status check contexts for the default branch (workflow job/status names). Empty for repositories with no CI."
+  type        = list(string)
+  default     = []
+}
+
 variable "aws" {
   description = "Optional AWS deploy-role configuration for this repository. Omit (null) for repositories that don't deploy to AWS."
   type = object({

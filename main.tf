@@ -18,8 +18,9 @@ module "repo" {
 
   for_each = local.config
 
-  repository_name  = each.key
-  action_variables = try(each.value.action_variables, {})
+  repository_name                = each.key
+  action_variables               = try(each.value.action_variables, {})
+  required_status_check_contexts = try(each.value.required_status_check_contexts, [])
 
   aws = try(local.aws_policies[each.key], null) == null ? null : merge(
     local.aws_policies[each.key],
