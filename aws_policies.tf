@@ -1,0 +1,171 @@
+# Per-repository AWS deploy-role configuration. AWS IAM permissions are
+# inherently deployment-specific and can't be derived automatically, so this
+# is the one thing a new AWS-deploying repository still requires real
+# Terraform code (not plain config.yml) for: state-bucket access is handled
+# generically by modules/repo, everything below is what that specific
+# repository's deployment needs beyond that baseline.
+#
+# To add AWS access for a new repository: add its entry to config.yml, then
+# add a matching entry here with its state key and the IAM statements its
+# deployment needs. See README.md for the full walkthrough.
+
+locals {
+  aws_region = "eu-central-1"
+
+  aws_policies = {
+    dyndns = {
+      state_key = "dyndns/terraform.tfstate"
+
+      # The Lambda runtime role dyndns' own Terraform manages; the deploy
+      # role needs to introspect it (see ManageLambdaRole below).
+      extra_readable_role_arns = [
+        "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/dyndns-route53-updater-role",
+      ]
+
+      apply_policy_statements = [
+        {
+          Sid      = "ManageApiGateway"
+          Effect   = "Allow"
+          Action   = "apigateway:*"
+          Resource = "arn:aws:apigateway:${local.aws_region}::*"
+        },
+        {
+          Sid    = "ManageLambda"
+          Effect = "Allow"
+          Action = "lambda:*"
+          Resource = [
+            "arn:aws:lambda:${local.aws_region}:${data.aws_caller_identity.current.account_id}:function:dyndns-route53-updater",
+            "arn:aws:lambda:${local.aws_region}:${data.aws_caller_identity.current.account_id}:function:dyndns-route53-updater:*",
+          ]
+        },
+        {
+          Sid    = "ManageLogs"
+          Effect = "Allow"
+          Action = [
+            "logs:CreateLogGroup",
+            "logs:DeleteLogGroup",
+            "logs:ListTagsForResource",
+            "logs:PutRetentionPolicy",
+            "logs:TagResource",
+            "logs:UntagResource",
+          ]
+          Resource = [
+            "arn:aws:logs:${local.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/dyndns-route53-updater",
+            "arn:aws:logs:${local.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/dyndns-route53-updater:*",
+            "arn:aws:logs:${local.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/apigateway/dyndns",
+            "arn:aws:logs:${local.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/apigateway/dyndns:*",
+          ]
+        },
+        {
+          Sid      = "DescribeLogs"
+          Effect   = "Allow"
+          Action   = "logs:DescribeLogGroups"
+          Resource = "*"
+        },
+        {
+          Sid      = "ManageDynDnsSecret"
+          Effect   = "Allow"
+          Action   = "secretsmanager:*"
+          Resource = "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:dyndns/fritzbox-*"
+        },
+        {
+          Sid    = "ManageDns"
+          Effect = "Allow"
+          Action = [
+            "route53:ChangeResourceRecordSets",
+            "route53:GetHostedZone",
+            "route53:ListResourceRecordSets",
+            "route53:ListTagsForResource",
+          ]
+          Resource = "arn:aws:route53:::hostedzone/Z07879811I86VC8PAL8HX"
+        },
+        {
+          Sid      = "ReadDnsChanges"
+          Effect   = "Allow"
+          Action   = "route53:GetChange"
+          Resource = "arn:aws:route53:::change/*"
+        },
+        {
+          Sid    = "ManageLambdaRole"
+          Effect = "Allow"
+          Action = [
+            "iam:CreateRole",
+            "iam:DeleteRole",
+            "iam:DeleteRolePolicy",
+            "iam:GetRole",
+            "iam:GetRolePolicy",
+            "iam:ListAttachedRolePolicies",
+            "iam:ListRolePolicies",
+            "iam:ListRoleTags",
+            "iam:PassRole",
+            "iam:PutRolePolicy",
+            "iam:TagRole",
+            "iam:UntagRole",
+            "iam:UpdateAssumeRolePolicy",
+            "iam:UpdateRoleDescription",
+          ]
+          Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/dyndns-route53-updater-role"
+        },
+      ]
+
+      plan_policy_statements = [
+        {
+          Sid      = "ReadApiGateway"
+          Effect   = "Allow"
+          Action   = "apigateway:GET"
+          Resource = "arn:aws:apigateway:${local.aws_region}::*"
+        },
+        {
+          Sid    = "ReadLambda"
+          Effect = "Allow"
+          Action = [
+            "lambda:GetFunction",
+            "lambda:GetFunctionCodeSigningConfig",
+            "lambda:GetPolicy",
+            "lambda:ListTags",
+            "lambda:ListVersionsByFunction",
+          ]
+          Resource = [
+            "arn:aws:lambda:${local.aws_region}:${data.aws_caller_identity.current.account_id}:function:dyndns-route53-updater",
+            "arn:aws:lambda:${local.aws_region}:${data.aws_caller_identity.current.account_id}:function:dyndns-route53-updater:*",
+          ]
+        },
+        {
+          Sid      = "DescribeLogs"
+          Effect   = "Allow"
+          Action   = "logs:DescribeLogGroups"
+          Resource = "*"
+        },
+        {
+          Sid    = "ReadLogTags"
+          Effect = "Allow"
+          Action = "logs:ListTagsForResource"
+          Resource = [
+            "arn:aws:logs:${local.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/dyndns-route53-updater",
+            "arn:aws:logs:${local.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/apigateway/dyndns",
+          ]
+        },
+        {
+          Sid    = "ReadDynDnsSecretMetadata"
+          Effect = "Allow"
+          Action = [
+            "secretsmanager:DescribeSecret",
+            "secretsmanager:GetResourcePolicy",
+            "secretsmanager:ListSecretVersionIds",
+          ]
+          Resource = "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:dyndns/fritzbox-*"
+        },
+        {
+          Sid    = "ReadDns"
+          Effect = "Allow"
+          Action = [
+            "route53:GetHostedZone",
+            "route53:ListResourceRecordSets",
+            "route53:ListTagsForResource",
+          ]
+          Resource = "arn:aws:route53:::hostedzone/Z07879811I86VC8PAL8HX"
+        },
+      ]
+    }
+  }
+}

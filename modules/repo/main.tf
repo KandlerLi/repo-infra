@@ -32,22 +32,40 @@ resource "github_repository_ruleset" "default_branch" {
   }
 }
 
-resource "github_actions_variable" "aws_account_id" {
-  repository    = github_repository.this.name
-  variable_name = "AWS_ACCOUNT_ID"
-  value         = "853955636908"
+moved {
+  from = github_actions_variable.aws_account_id
+  to   = github_actions_variable.aws_account_id[0]
 }
 
-resource "github_actions_variable" "aws_plan_role_arn" {
+moved {
+  from = github_actions_variable.aws_role_arn
+  to   = github_actions_variable.aws_role_arn[0]
+}
+
+moved {
+  from = github_actions_variable.aws_plan_role_arn
+  to   = github_actions_variable.aws_plan_role_arn[0]
+}
+
+resource "github_actions_variable" "aws_account_id" {
+  count         = local.aws_enabled ? 1 : 0
   repository    = github_repository.this.name
-  variable_name = "AWS_PLAN_ROLE_ARN"
-  value         = "arn:aws:iam::853955636908:role/${github_repository.this.name}-github-plan"
+  variable_name = "AWS_ACCOUNT_ID"
+  value         = var.aws_account_id
 }
 
 resource "github_actions_variable" "aws_role_arn" {
+  count         = local.aws_enabled ? 1 : 0
   repository    = github_repository.this.name
   variable_name = "AWS_ROLE_ARN"
-  value         = "arn:aws:iam::853955636908:role/${github_repository.this.name}-github-actions"
+  value         = aws_iam_role.apply[0].arn
+}
+
+resource "github_actions_variable" "aws_plan_role_arn" {
+  count         = local.aws_enabled ? 1 : 0
+  repository    = github_repository.this.name
+  variable_name = "AWS_PLAN_ROLE_ARN"
+  value         = aws_iam_role.plan[0].arn
 }
 
 resource "github_actions_variable" "additional" {
@@ -90,4 +108,200 @@ resource "github_workflow_repository_permissions" "this" {
   repository                       = github_repository.this.name
   default_workflow_permissions     = "read"
   can_approve_pull_request_reviews = false
+}
+
+locals {
+  aws_enabled = var.aws != null
+
+  github_oidc_subject_base  = "repo:${var.github_owner}@${var.github_owner_id}/${github_repository.this.name}@${github_repository.this.repo_id}"
+  github_apply_oidc_subject = "${local.github_oidc_subject_base}:environment:production"
+  github_plan_oidc_subject  = "${local.github_oidc_subject_base}:pull_request"
+
+  aws_state_bucket_arn = "arn:aws:s3:::jkandler-terraform-state"
+  aws_state_lock_key   = local.aws_enabled ? "${var.aws.state_key}.tflock" : null
+}
+
+resource "aws_iam_role" "apply" {
+  count = local.aws_enabled ? 1 : 0
+
+  name        = "${var.repository_name}-github-actions"
+  description = "Deploys ${var.repository_name} from its production environment"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Federated = var.oidc_provider_arn }
+      Action    = "sts:AssumeRoleWithWebIdentity"
+      Condition = {
+        StringEquals = {
+          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+          "token.actions.githubusercontent.com:sub" = local.github_apply_oidc_subject
+        }
+      }
+    }]
+  })
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "aws_iam_role" "plan" {
+  count = local.aws_enabled ? 1 : 0
+
+  name        = "${var.repository_name}-github-plan"
+  description = "Creates read-only Terraform plans for trusted ${var.repository_name} pull requests"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Federated = var.oidc_provider_arn }
+      Action    = "sts:AssumeRoleWithWebIdentity"
+      Condition = {
+        StringEquals = {
+          "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+          "token.actions.githubusercontent.com:sub" = local.github_plan_oidc_subject
+        }
+      }
+    }]
+  })
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "aws_iam_role_policy" "apply" {
+  count = local.aws_enabled ? 1 : 0
+
+  name = "${var.repository_name}-terraform-deployment"
+  role = aws_iam_role.apply[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = concat(
+      [
+        {
+          Sid      = "IdentifyAccount"
+          Effect   = "Allow"
+          Action   = "sts:GetCallerIdentity"
+          Resource = "*"
+        },
+        {
+          Sid      = "ListTerraformState"
+          Effect   = "Allow"
+          Action   = "s3:ListBucket"
+          Resource = local.aws_state_bucket_arn
+          Condition = {
+            StringLike = {
+              "s3:prefix" = [var.aws.state_key, local.aws_state_lock_key]
+            }
+          }
+        },
+        {
+          Sid    = "ReadWriteTerraformState"
+          Effect = "Allow"
+          Action = ["s3:GetObject", "s3:PutObject"]
+          Resource = [
+            "${local.aws_state_bucket_arn}/${var.aws.state_key}",
+            "${local.aws_state_bucket_arn}/${local.aws_state_lock_key}",
+          ]
+        },
+        {
+          Sid      = "DeleteTerraformLock"
+          Effect   = "Allow"
+          Action   = "s3:DeleteObject"
+          Resource = "${local.aws_state_bucket_arn}/${local.aws_state_lock_key}"
+        },
+      ],
+      jsondecode(var.aws.apply_policy_statements),
+      [
+        {
+          Sid    = "ReadAutomationRoles"
+          Effect = "Allow"
+          Action = [
+            "iam:GetRole",
+            "iam:GetRolePolicy",
+            "iam:ListAttachedRolePolicies",
+            "iam:ListRolePolicies",
+            "iam:ListRoleTags",
+          ]
+          Resource = [aws_iam_role.apply[0].arn, aws_iam_role.plan[0].arn]
+        },
+        {
+          Sid    = "ReadGitHubIdentityProvider"
+          Effect = "Allow"
+          Action = [
+            "iam:GetOpenIDConnectProvider",
+            "iam:ListOpenIDConnectProviderTags",
+          ]
+          Resource = var.oidc_provider_arn
+        },
+      ]
+    )
+  })
+}
+
+resource "aws_iam_role_policy" "plan" {
+  count = local.aws_enabled ? 1 : 0
+
+  name = "${var.repository_name}-terraform-read-only-plan"
+  role = aws_iam_role.plan[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = concat(
+      [
+        {
+          Sid      = "IdentifyAccount"
+          Effect   = "Allow"
+          Action   = "sts:GetCallerIdentity"
+          Resource = "*"
+        },
+        {
+          Sid      = "ListTerraformState"
+          Effect   = "Allow"
+          Action   = "s3:ListBucket"
+          Resource = local.aws_state_bucket_arn
+          Condition = {
+            StringLike = {
+              "s3:prefix" = [var.aws.state_key, local.aws_state_lock_key]
+            }
+          }
+        },
+        {
+          Sid      = "ReadTerraformState"
+          Effect   = "Allow"
+          Action   = "s3:GetObject"
+          Resource = "${local.aws_state_bucket_arn}/${var.aws.state_key}"
+        },
+      ],
+      jsondecode(var.aws.plan_policy_statements),
+      [
+        {
+          Sid    = "ReadRoles"
+          Effect = "Allow"
+          Action = [
+            "iam:GetRole",
+            "iam:GetRolePolicy",
+            "iam:ListAttachedRolePolicies",
+            "iam:ListRolePolicies",
+            "iam:ListRoleTags",
+          ]
+          Resource = concat([aws_iam_role.apply[0].arn, aws_iam_role.plan[0].arn], var.aws.extra_readable_role_arns)
+        },
+        {
+          Sid    = "ReadGitHubIdentityProvider"
+          Effect = "Allow"
+          Action = [
+            "iam:GetOpenIDConnectProvider",
+            "iam:ListOpenIDConnectProviderTags",
+          ]
+          Resource = var.oidc_provider_arn
+        },
+      ]
+    )
+  })
 }
