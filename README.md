@@ -14,9 +14,9 @@ repository managed through the shared `./modules/repo` module. Currently
 managed:
 
 - `dyndns` — the real DynDNS Terraform/CI repository (GitHub settings + AWS
-  deploy roles)
+  deploy roles + a self-hosted GitHub Actions runner)
 - `testing` — a scratch repository used to validate the module (GitHub
-  settings only, no AWS access)
+  settings only, no AWS access, no runner)
 
 `whoami` has pre-existing manual protection (a disabled branch ruleset,
 non-default merge settings, unrestricted Actions permissions) but is
@@ -59,6 +59,15 @@ AWS side (only for repositories with an entry in `aws_policies.tf`, e.g.
   above, set from the real created role ARNs — not a guessed ARN string or a
   manually-pasted GitHub UI value
 
+Runner side: **not managed by Terraform at all**. A repository entry may set
+`runner: true`, but this module never reads that key — it exists purely as a
+convention for `home-infra`'s `scripts/sync_github_runner_repositories.py` to
+read (see "Adding a repository with a self-hosted GitHub Actions runner"
+below). Attaching a self-hosted runner to a repository is inherently
+imperative (obtain a registration token, run `config.sh` against the runner
+VM), which Terraform's GitHub provider has no resource for — only
+`github_actions_runner_group`, an org-level routing construct, exists there.
+
 ## Adding a new repository that deploys to AWS
 
 This is the workflow the consolidation exists for — one repository, one
@@ -78,6 +87,30 @@ This is the workflow the consolidation exists for — one repository, one
 A repository with no entry in `aws_policies.tf` (like `testing`) gets no AWS
 role at all — `var.aws` is `null` and the module skips every AWS resource for
 it.
+
+## Adding a repository with a self-hosted GitHub Actions runner
+
+The runner VM itself is provisioned and configured by `home-infra`'s
+`github_runner` Ansible role, entirely separately from this Terraform root.
+This root only holds the `runner: true` convention key that tells
+`home-infra` which repositories should get one:
+
+1. Add `runner: true` to the repository's entry in `config.yml`.
+2. In `/home/julian/projects/infra/home-infra`, run
+   `.venv/bin/python scripts/sync_github_runner_repositories.py`. This
+   regenerates
+   `ansible/inventory/group_vars/all/github_runner_repositories.yml` from
+   every `config.yml` entry with `runner: true`.
+3. Review the diff and commit it in `home-infra`.
+4. Run the `github-runner.yml` playbook to register and start the runner
+   process for the new repository (it registers each repository's runner
+   with its own service user/systemd unit on the shared runner VM — see that
+   role's `defaults/main.yml` for details).
+
+This is a two-tool workflow by design: Terraform manages declarative GitHub/
+AWS state, but attaching a runner process to a repository is imperative and
+stays with Ansible. `config.yml` is still the single place you decide which
+repositories exist and what they get.
 
 ## Adding a repository that already has manual configuration
 
