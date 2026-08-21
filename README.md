@@ -3,7 +3,7 @@
 This repository brings GitHub repository configuration and, optionally, that
 repository's AWS deploy credentials under Terraform management from a single
 place — following the hardening pattern documented in
-`/home/julian/projects/home-infra-ai-context/context/repository-security-blueprint.md`
+`/home/julian/projects/docs/home-infra-ai-context/context/repository-security-blueprint.md`
 (originally derived from the manually-hardened `dyndns` repository) and
 absorbing what was previously a separate `aws-account-bootstrap` root.
 
@@ -112,7 +112,7 @@ roles; never remove it without an explicitly approved design change.
 ## Validation
 
 ```bash
-cd /home/julian/projects/repo-infra
+cd /home/julian/projects/bootstrap/repo-infra
 terraform fmt -check -recursive
 terraform validate
 terraform plan
