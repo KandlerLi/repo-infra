@@ -6,4 +6,15 @@ dyndns:
   action_variables:
     ROUTE53_ZONE_ID: Z07879811I86VC8PAL8HX
 
+# Static CV/personal site at www.jkandler.de (S3 + CloudFront + ACM).
+# Deliberately no `runner: true`: this repo uses GitHub-hosted runners so
+# its deploy pipeline doesn't depend on the home network being up -- that
+# would partially defeat the point of hosting it on AWS in the first place.
+website:
+  required_status_check_contexts:
+    - "Validate"
+    - "Terraform plan"
+  action_variables:
+    ROUTE53_ZONE_ID: Z07879811I86VC8PAL8HX
+
 testing: {}

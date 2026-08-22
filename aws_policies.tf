@@ -167,5 +167,139 @@ locals {
         },
       ]
     }
+
+    website = {
+      state_key = "website/terraform.tfstate"
+
+      apply_policy_statements = [
+        {
+          # Broad action wildcard, tightly scoped resource -- same shape as
+          # ManageDynDnsSecret above. Covers bucket lifecycle (create/tag/
+          # policy/public-access-block/ownership-controls) plus the object
+          # reads/writes the deploy step's `aws s3 sync` needs.
+          Sid    = "ManageSiteBucket"
+          Effect = "Allow"
+          Action = "s3:*"
+          Resource = [
+            "arn:aws:s3:::www.jkandler.de",
+            "arn:aws:s3:::www.jkandler.de/*",
+          ]
+        },
+        {
+          # CloudFront does not support resource-level permissions for
+          # distribution/OAC lifecycle actions (same reasoning as
+          # DescribeLogs above needing Resource "*").
+          Sid    = "ManageCloudFront"
+          Effect = "Allow"
+          Action = [
+            "cloudfront:CreateDistribution",
+            "cloudfront:GetDistribution",
+            "cloudfront:UpdateDistribution",
+            "cloudfront:DeleteDistribution",
+            "cloudfront:TagResource",
+            "cloudfront:UntagResource",
+            "cloudfront:ListTagsForResource",
+            "cloudfront:CreateOriginAccessControl",
+            "cloudfront:GetOriginAccessControl",
+            "cloudfront:UpdateOriginAccessControl",
+            "cloudfront:DeleteOriginAccessControl",
+          ]
+          Resource = "*"
+        },
+        {
+          Sid    = "ManageCloudFrontInvalidations"
+          Effect = "Allow"
+          Action = [
+            "cloudfront:CreateInvalidation",
+            "cloudfront:GetInvalidation",
+            "cloudfront:ListInvalidations",
+          ]
+          Resource = "arn:aws:cloudfront::${data.aws_caller_identity.current.account_id}:distribution/*"
+        },
+        {
+          # RequestCertificate has no resource-level support either (the
+          # certificate ARN doesn't exist until the call succeeds).
+          Sid      = "RequestCertificate"
+          Effect   = "Allow"
+          Action   = "acm:RequestCertificate"
+          Resource = "*"
+        },
+        {
+          Sid    = "ManageCertificate"
+          Effect = "Allow"
+          Action = [
+            "acm:DescribeCertificate",
+            "acm:GetCertificate",
+            "acm:DeleteCertificate",
+            "acm:AddTagsToCertificate",
+            "acm:RemoveTagsFromCertificate",
+            "acm:ListTagsForCertificate",
+          ]
+          Resource = "arn:aws:acm:us-east-1:${data.aws_caller_identity.current.account_id}:certificate/*"
+        },
+        {
+          Sid    = "ManageDns"
+          Effect = "Allow"
+          Action = [
+            "route53:ChangeResourceRecordSets",
+            "route53:GetHostedZone",
+            "route53:ListResourceRecordSets",
+            "route53:ListTagsForResource",
+          ]
+          Resource = "arn:aws:route53:::hostedzone/Z07879811I86VC8PAL8HX"
+        },
+        {
+          Sid      = "ReadDnsChanges"
+          Effect   = "Allow"
+          Action   = "route53:GetChange"
+          Resource = "arn:aws:route53:::change/*"
+        },
+      ]
+
+      plan_policy_statements = [
+        {
+          Sid    = "ReadSiteBucket"
+          Effect = "Allow"
+          Action = [
+            "s3:GetBucketTagging",
+            "s3:GetBucketPublicAccessBlock",
+            "s3:GetBucketOwnershipControls",
+            "s3:GetBucketPolicy",
+            "s3:GetBucketLocation",
+            "s3:ListBucket",
+          ]
+          Resource = "arn:aws:s3:::www.jkandler.de"
+        },
+        {
+          Sid    = "ReadCloudFront"
+          Effect = "Allow"
+          Action = [
+            "cloudfront:GetDistribution",
+            "cloudfront:ListTagsForResource",
+            "cloudfront:GetOriginAccessControl",
+          ]
+          Resource = "*"
+        },
+        {
+          Sid    = "ReadCertificate"
+          Effect = "Allow"
+          Action = [
+            "acm:DescribeCertificate",
+            "acm:ListTagsForCertificate",
+          ]
+          Resource = "arn:aws:acm:us-east-1:${data.aws_caller_identity.current.account_id}:certificate/*"
+        },
+        {
+          Sid    = "ReadDns"
+          Effect = "Allow"
+          Action = [
+            "route53:GetHostedZone",
+            "route53:ListResourceRecordSets",
+            "route53:ListTagsForResource",
+          ]
+          Resource = "arn:aws:route53:::hostedzone/Z07879811I86VC8PAL8HX"
+        },
+      ]
+    }
   }
 }
