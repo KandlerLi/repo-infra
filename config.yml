@@ -17,6 +17,18 @@ website:
   action_variables:
     ROUTE53_ZONE_ID: Z07879811I86VC8PAL8HX
 
+# $10/month AWS Budget alert. Self-hosted runner (like dyndns, not
+# website): this repo's own apply.yml runs terraform apply directly, no
+# separate deploy step, so there's no reason to keep it off the home
+# network the way website's actual CloudFront deploy needed to be.
+aws-budget:
+  runner: true
+  required_status_check_contexts:
+    - "Validate"
+    - "Terraform plan"
+  action_variables:
+    ALERT_EMAIL: julian.kandler@outlook.com
+
 testing: {}
 
 # Backup mirrors for repos that previously existed only on one laptop, with

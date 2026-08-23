@@ -320,5 +320,42 @@ locals {
         },
       ]
     }
+
+    aws-budget = {
+      state_key = "aws-budget/terraform.tfstate"
+
+      apply_policy_statements = [
+        {
+          # Budget ARNs don't exist until creation succeeds, same reasoning
+          # as RequestCertificate above.
+          Sid      = "CreateBudget"
+          Effect   = "Allow"
+          Action   = "budgets:CreateBudget"
+          Resource = "*"
+        },
+        {
+          Sid    = "ManageBudget"
+          Effect = "Allow"
+          Action = "budgets:*"
+          Resource = [
+            "arn:aws:budgets::${data.aws_caller_identity.current.account_id}:budget/monthly-cost-alert",
+          ]
+        },
+      ]
+
+      plan_policy_statements = [
+        {
+          Sid    = "ReadBudget"
+          Effect = "Allow"
+          Action = [
+            "budgets:DescribeBudget",
+            "budgets:DescribeBudgets",
+            "budgets:DescribeNotificationsForBudget",
+            "budgets:DescribeSubscribersForNotification",
+          ]
+          Resource = "arn:aws:budgets::${data.aws_caller_identity.current.account_id}:budget/monthly-cost-alert"
+        },
+      ]
+    }
   }
 }
