@@ -395,6 +395,10 @@ locals {
           Resource = "arn:aws:cloudwatch:us-east-1:${data.aws_caller_identity.current.account_id}:alarm:homeserver-unreachable"
         },
         {
+          # Subscription actions (Get/SetSubscriptionAttributes, Unsubscribe)
+          # act on the subscription's own ARN -- the topic ARN plus a
+          # ":<subscription-id>" suffix Terraform can't know in advance --
+          # not the topic ARN itself, so the resource list covers both.
           Sid    = "ManageSnsTopic"
           Effect = "Allow"
           Action = [
@@ -404,12 +408,17 @@ locals {
             "sns:SetTopicAttributes",
             "sns:Subscribe",
             "sns:Unsubscribe",
+            "sns:GetSubscriptionAttributes",
+            "sns:SetSubscriptionAttributes",
             "sns:ListSubscriptionsByTopic",
             "sns:TagResource",
             "sns:UntagResource",
             "sns:ListTagsForResource",
           ]
-          Resource = "arn:aws:sns:us-east-1:${data.aws_caller_identity.current.account_id}:homeserver-health-alerts"
+          Resource = [
+            "arn:aws:sns:us-east-1:${data.aws_caller_identity.current.account_id}:homeserver-health-alerts",
+            "arn:aws:sns:us-east-1:${data.aws_caller_identity.current.account_id}:homeserver-health-alerts:*",
+          ]
         },
       ]
 
@@ -438,10 +447,14 @@ locals {
           Effect = "Allow"
           Action = [
             "sns:GetTopicAttributes",
+            "sns:GetSubscriptionAttributes",
             "sns:ListSubscriptionsByTopic",
             "sns:ListTagsForResource",
           ]
-          Resource = "arn:aws:sns:us-east-1:${data.aws_caller_identity.current.account_id}:homeserver-health-alerts"
+          Resource = [
+            "arn:aws:sns:us-east-1:${data.aws_caller_identity.current.account_id}:homeserver-health-alerts",
+            "arn:aws:sns:us-east-1:${data.aws_caller_identity.current.account_id}:homeserver-health-alerts:*",
+          ]
         },
       ]
     }
