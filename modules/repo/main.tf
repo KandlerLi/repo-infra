@@ -60,6 +60,16 @@ moved {
   to   = github_actions_variable.aws_plan_role_arn[0]
 }
 
+moved {
+  from = github_repository_environment.production
+  to   = github_repository_environment.production[0]
+}
+
+moved {
+  from = github_branch_protection.this
+  to   = github_branch_protection.this[0]
+}
+
 resource "github_actions_variable" "aws_account_id" {
   count         = local.aws_enabled ? 1 : 0
   repository    = github_repository.this.name
@@ -91,6 +101,14 @@ resource "github_actions_variable" "additional" {
 
 
 resource "github_repository_environment" "production" {
+  # GitHub's required-reviewers environment protection rule needs a paid
+  # plan for private repositories (fine on the free tier for public repos,
+  # confirmed live -- website/dyndns/testing never hit this). A backup
+  # mirror with no CI/deploy pipeline has no use for a deploy-gating
+  # environment anyway, so this reuses branch_protection_enabled: both
+  # flags together mean "this repo has a real protected release process."
+  count = var.branch_protection_enabled ? 1 : 0
+
   environment = "production"
   repository  = github_repository.this.name
   reviewers {
