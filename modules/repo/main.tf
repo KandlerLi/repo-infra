@@ -19,6 +19,19 @@ resource "github_repository_vulnerability_alerts" "this" {
   enabled    = true
 }
 
+# Found live: a genuinely empty repository has no default branch until its
+# first push, and GitHub just uses whatever branch name that push happens
+# to use -- for aws-budget that was "initial-setup", not "main", even
+# though branch protection below is hardcoded to the "main" pattern.
+# GitHub's API can't set the default branch to one that doesn't exist yet,
+# so a brand-new repo's very first apply may need a second apply (after
+# the first push creates "main") before this actually takes effect --
+# expected, not a bug.
+resource "github_branch_default" "this" {
+  repository = github_repository.this.name
+  branch     = "main"
+}
+
 resource "github_branch_protection" "this" {
   count = var.branch_protection_enabled ? 1 : 0
 
