@@ -258,15 +258,33 @@ locals {
 
       plan_policy_statements = [
         {
+          # The AWS provider's core aws_s3_bucket read unconditionally
+          # checks this full set of bucket-level settings on every refresh,
+          # regardless of which ones this config actually sets -- found live
+          # one AccessDenied at a time (GetBucketAcl, then GetBucketCORS)
+          # against the narrowly-scoped plan role. Granting the whole
+          # standard read set up front avoids further one-at-a-time
+          # apply/replan cycles; it's still read-only and scoped to exactly
+          # this one bucket ARN.
           Sid    = "ReadSiteBucket"
           Effect = "Allow"
           Action = [
-            "s3:GetBucketTagging",
-            "s3:GetBucketPublicAccessBlock",
+            "s3:GetAccelerateConfiguration",
+            "s3:GetBucketAcl",
+            "s3:GetBucketCORS",
+            "s3:GetBucketLocation",
+            "s3:GetBucketLogging",
+            "s3:GetBucketObjectLockConfiguration",
             "s3:GetBucketOwnershipControls",
             "s3:GetBucketPolicy",
-            "s3:GetBucketLocation",
-            "s3:GetBucketAcl",
+            "s3:GetBucketPublicAccessBlock",
+            "s3:GetBucketRequestPayment",
+            "s3:GetBucketTagging",
+            "s3:GetBucketVersioning",
+            "s3:GetBucketWebsite",
+            "s3:GetEncryptionConfiguration",
+            "s3:GetLifecycleConfiguration",
+            "s3:GetReplicationConfiguration",
             "s3:ListBucket",
           ]
           Resource = "arn:aws:s3:::www.jkandler.de"
