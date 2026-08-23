@@ -69,3 +69,7 @@ home-infra-docs:
 home-infra-ai-context:
   visibility: private
   branch_protection_enabled: false
+
+operator-identity:
+  visibility: private
+  branch_protection_enabled: false
