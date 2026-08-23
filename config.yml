@@ -7,20 +7,22 @@ dyndns:
     ROUTE53_ZONE_ID: Z07879811I86VC8PAL8HX
 
 # Static CV/personal site at www.jkandler.de (S3 + CloudFront + ACM).
-# Deliberately no `runner: true`: this repo uses GitHub-hosted runners so
-# its deploy pipeline doesn't depend on the home network being up -- that
-# would partially defeat the point of hosting it on AWS in the first place.
+# Originally GitHub-hosted specifically to keep the deploy pipeline
+# independent of home-network uptime. Switched to the self-hosted home
+# runner on 2026-08-23 at the user's explicit request, after being shown
+# that tradeoff directly: a homeserver outage now also blocks shipping a
+# site fix, not just home services. See ADR 0016's Update section.
 website:
+  runner: true
   required_status_check_contexts:
     - "Validate"
     - "Terraform plan"
   action_variables:
     ROUTE53_ZONE_ID: Z07879811I86VC8PAL8HX
 
-# $10/month AWS Budget alert. Self-hosted runner (like dyndns, not
-# website): this repo's own apply.yml runs terraform apply directly, no
-# separate deploy step, so there's no reason to keep it off the home
-# network the way website's actual CloudFront deploy needed to be.
+# $10/month AWS Budget alert. Self-hosted runner, same as everything else
+# now -- this repo's own apply.yml runs terraform apply directly, no
+# separate deploy step.
 aws-budget:
   runner: true
   required_status_check_contexts:
