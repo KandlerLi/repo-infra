@@ -1,7 +1,7 @@
 resource "github_repository" "this" {
   name = var.repository_name
 
-  visibility = "public"
+  visibility = var.visibility
 
   has_projects           = true
   delete_branch_on_merge = true
@@ -20,6 +20,8 @@ resource "github_repository_vulnerability_alerts" "this" {
 }
 
 resource "github_branch_protection" "this" {
+  count = var.branch_protection_enabled ? 1 : 0
+
   repository_id = github_repository.this.node_id
   pattern       = "main"
 

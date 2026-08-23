@@ -18,3 +18,29 @@ website:
     ROUTE53_ZONE_ID: Z07879811I86VC8PAL8HX
 
 testing: {}
+
+# Backup mirrors for repos that previously existed only on one laptop, with
+# no other copy anywhere -- private, no CI, no branch protection. These are
+# single-owner git history backups, not collaboratively-protected release
+# repos: mandatory signed-commit PRs (repo-infra's normal baseline) would
+# only make routine backup pushes painful here, for zero actual benefit
+# (nothing runs CI against them, nobody else pushes to them).
+home-infra:
+  visibility: private
+  branch_protection_enabled: false
+
+repo-infra:
+  visibility: private
+  branch_protection_enabled: false
+
+terraform-state:
+  visibility: private
+  branch_protection_enabled: false
+
+home-infra-docs:
+  visibility: private
+  branch_protection_enabled: false
+
+home-infra-ai-context:
+  visibility: private
+  branch_protection_enabled: false

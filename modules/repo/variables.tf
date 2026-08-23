@@ -8,6 +8,23 @@ variable "action_variables" {
   type        = map(string)
 }
 
+variable "visibility" {
+  description = "GitHub repository visibility"
+  type        = string
+  default     = "public"
+
+  validation {
+    condition     = contains(["public", "private"], var.visibility)
+    error_message = "visibility must be \"public\" or \"private\"."
+  }
+}
+
+variable "branch_protection_enabled" {
+  description = "Whether to apply the hardcoded branch-protection baseline (signed commits, PR-only merges, required status checks). False for backup-only mirrors with no CI and a single owner, where that baseline would only make routine pushes painful for no real benefit."
+  type        = bool
+  default     = true
+}
+
 variable "required_status_check_contexts" {
   description = "Required status check contexts for the default branch (workflow job/status names). Empty for repositories with no CI."
   type        = list(string)
