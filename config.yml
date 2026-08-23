@@ -31,6 +31,19 @@ aws-budget:
   action_variables:
     ALERT_EMAIL: julian.kandler@outlook.com
 
+# External reachability check for the homeserver (Route53 health check +
+# CloudWatch alarm + SNS email), deliberately the only monitoring piece
+# that runs in AWS -- the rest is planned to run on the homeserver itself
+# for cost reasons, but home-hosted monitoring can't alert about the home
+# network itself being unreachable.
+homeserver-health-check:
+  runner: true
+  required_status_check_contexts:
+    - "Validate"
+    - "Terraform plan"
+  action_variables:
+    ALERT_EMAIL: julian.kandler@outlook.com
+
 # Backup mirrors for repos that previously existed only on one laptop, with
 # no other copy anywhere -- private, no CI, no branch protection. These are
 # single-owner git history backups, not collaboratively-protected release

@@ -357,5 +357,93 @@ locals {
         },
       ]
     }
+
+    homeserver-health-check = {
+      state_key = "homeserver-health-check/terraform.tfstate"
+
+      apply_policy_statements = [
+        {
+          # Health check IDs are AWS-generated UUIDs, not something
+          # Terraform lets you choose in advance the way a budget or
+          # CloudWatch alarm name can be -- unlike those, there's no ARN
+          # to scope to until after creation, so every health check
+          # action here needs Resource "*".
+          Sid    = "ManageHealthCheck"
+          Effect = "Allow"
+          Action = [
+            "route53:CreateHealthCheck",
+            "route53:GetHealthCheck",
+            "route53:UpdateHealthCheck",
+            "route53:DeleteHealthCheck",
+            "route53:GetHealthCheckStatus",
+            "route53:ListTagsForResource",
+            "route53:ChangeTagsForResource",
+          ]
+          Resource = "*"
+        },
+        {
+          Sid    = "ManageAlarm"
+          Effect = "Allow"
+          Action = [
+            "cloudwatch:PutMetricAlarm",
+            "cloudwatch:DescribeAlarms",
+            "cloudwatch:DeleteAlarms",
+            "cloudwatch:TagResource",
+            "cloudwatch:UntagResource",
+            "cloudwatch:ListTagsForResource",
+          ]
+          Resource = "arn:aws:cloudwatch:us-east-1:${data.aws_caller_identity.current.account_id}:alarm:homeserver-unreachable"
+        },
+        {
+          Sid    = "ManageSnsTopic"
+          Effect = "Allow"
+          Action = [
+            "sns:CreateTopic",
+            "sns:DeleteTopic",
+            "sns:GetTopicAttributes",
+            "sns:SetTopicAttributes",
+            "sns:Subscribe",
+            "sns:Unsubscribe",
+            "sns:ListSubscriptionsByTopic",
+            "sns:TagResource",
+            "sns:UntagResource",
+            "sns:ListTagsForResource",
+          ]
+          Resource = "arn:aws:sns:us-east-1:${data.aws_caller_identity.current.account_id}:homeserver-health-alerts"
+        },
+      ]
+
+      plan_policy_statements = [
+        {
+          Sid    = "ReadHealthCheck"
+          Effect = "Allow"
+          Action = [
+            "route53:GetHealthCheck",
+            "route53:GetHealthCheckStatus",
+            "route53:ListTagsForResource",
+          ]
+          Resource = "*"
+        },
+        {
+          Sid    = "ReadAlarm"
+          Effect = "Allow"
+          Action = [
+            "cloudwatch:DescribeAlarms",
+            "cloudwatch:ListTagsForResource",
+          ]
+          Resource = "arn:aws:cloudwatch:us-east-1:${data.aws_caller_identity.current.account_id}:alarm:homeserver-unreachable"
+        },
+        {
+          Sid    = "ReadSnsTopic"
+          Effect = "Allow"
+          Action = [
+            "sns:GetTopicAttributes",
+            "sns:ListSubscriptionsByTopic",
+            "sns:ListTagsForResource",
+          ]
+          Resource = "arn:aws:sns:us-east-1:${data.aws_caller_identity.current.account_id}:homeserver-health-alerts"
+        },
+      ]
+    }
   }
 }
