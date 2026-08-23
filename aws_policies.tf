@@ -266,6 +266,7 @@ locals {
             "s3:GetBucketOwnershipControls",
             "s3:GetBucketPolicy",
             "s3:GetBucketLocation",
+            "s3:GetBucketAcl",
             "s3:ListBucket",
           ]
           Resource = "arn:aws:s3:::www.jkandler.de"
