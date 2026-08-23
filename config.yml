@@ -31,8 +31,6 @@ aws-budget:
   action_variables:
     ALERT_EMAIL: julian.kandler@outlook.com
 
-testing: {}
-
 # Backup mirrors for repos that previously existed only on one laptop, with
 # no other copy anywhere -- private, no CI, no branch protection. These are
 # single-owner git history backups, not collaboratively-protected release

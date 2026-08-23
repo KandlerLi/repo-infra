@@ -13,10 +13,20 @@ Managed repositories are declared in `config.yml`. Each key becomes a GitHub
 repository managed through the shared `./modules/repo` module. Currently
 managed:
 
-- `dyndns` — the real DynDNS Terraform/CI repository (GitHub settings + AWS
-  deploy roles + a self-hosted GitHub Actions runner)
-- `testing` — a scratch repository used to validate the module (GitHub
-  settings only, no AWS access, no runner)
+- `dyndns`, `website`, `aws-budget` — real Terraform/CI repositories,
+  public, full branch protection, self-hosted GitHub Actions runner, AWS
+  deploy roles
+- `home-infra`, `repo-infra`, `terraform-state`, `home-infra-docs`,
+  `home-infra-ai-context` — private backup mirrors (`visibility: private`,
+  `branch_protection_enabled: false`; single-owner git-history backups
+  with no CI, not collaboratively-protected release repos — see
+  `config.yml`'s own comment for why mandatory signed-commit PRs would
+  only add friction here)
+
+The scratch repository `testing`, previously used to validate the module,
+was deleted (removed from `config.yml`, which destroys its
+`github_repository` resource along with everything else the module
+created for it) once it had served its purpose.
 
 `whoami` has pre-existing manual protection (a disabled branch ruleset,
 non-default merge settings, unrestricted Actions permissions) but is
@@ -47,20 +57,32 @@ GitHub side (always):
   auto-merge disabled
 - `github_repository_vulnerability_alerts` — Dependabot security alerts
   enabled
-- `github_branch_protection` — a hardcoded baseline applied to every managed
-  repository: no force-pushes or deletions on the default branch, required
-  linear history, required signed commits, required conversation
+- `github_branch_default` — pins the default branch to `main`. A genuinely
+  empty repository has no default branch until its first push, and GitHub
+  just uses whatever branch name that push happens to use — found live
+  when a new repository's first push, on a branch not named `main`,
+  silently became its default instead. GitHub's API can't set the default
+  branch to one that doesn't exist yet, so a brand-new repository's very
+  first apply may need a second apply (after the first push creates
+  `main`) before this actually takes effect.
+- `github_branch_protection` — the baseline described above, applied when
+  `branch_protection_enabled` is true (the default; false for the private
+  backup mirrors): no force-pushes or deletions on the default branch,
+  required linear history, required signed commits, required conversation
   resolution, admin enforcement (nobody, including the owner, can bypass),
   `required_approving_review_count = 0` native reviews (GitHub cannot let a
   sole owner approve their own PR — see `dyndns`'s `.github/CODEOWNERS`),
   plus a strict required-status-checks list from each repository's
   `required_status_check_contexts` in `config.yml` (empty for repositories
-  with no CI, like `testing`)
+  with no CI)
 - `github_actions_variable` — repo-specific variables from `config.yml`, plus
   `AWS_ACCOUNT_ID`/`AWS_ROLE_ARN`/`AWS_PLAN_ROLE_ARN` when AWS access is
   configured (see below)
 - `github_repository_environment` — a `production` environment requiring
-  owner review
+  owner review, also gated on `branch_protection_enabled` (GitHub's
+  required-reviewers environment protection needs a paid plan for private
+  repositories — found live when this unconditionally applied to the
+  private backup mirrors)
 - `github_actions_repository_permissions` — the allowed-Actions allowlist
   (`actions/checkout@*`, `aws-actions/configure-aws-credentials@*`,
   `hashicorp/setup-terraform@*`) and `sha_pinning_required` (hardcoded to
@@ -119,9 +141,9 @@ This is the workflow the consolidation exists for — one repository, one
    wiring the resulting ARNs into the repo's Actions variables) is automatic.
 3. `terraform plan`, review, `terraform apply`.
 
-A repository with no entry in `aws_policies.tf` (like `testing`) gets no AWS
-role at all — `var.aws` is `null` and the module skips every AWS resource for
-it.
+A repository with no entry in `aws_policies.tf` (like the private backup
+mirrors) gets no AWS role at all — `var.aws` is `null` and the module
+skips every AWS resource for it.
 
 ## Adding a repository with a self-hosted GitHub Actions runner
 
