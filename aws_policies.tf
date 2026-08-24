@@ -464,12 +464,22 @@ locals {
 
       apply_policy_statements = [
         {
+          # ses:VerifyDomainIdentity/ses:VerifyEmailIdentity create the
+          # identity itself, so there's no existing identity ARN to scope
+          # them to yet -- AWS requires Resource "*" for these two specific
+          # actions and silently denies them under an identity-ARN-scoped
+          # statement, even though most other SES identity actions (below)
+          # do support that scoping.
+          Sid      = "VerifySesIdentities"
+          Effect   = "Allow"
+          Action   = ["ses:VerifyDomainIdentity", "ses:VerifyEmailIdentity"]
+          Resource = "*"
+        },
+        {
           Sid    = "ManageSesIdentities"
           Effect = "Allow"
           Action = [
-            "ses:VerifyDomainIdentity",
             "ses:VerifyDomainDkim",
-            "ses:VerifyEmailIdentity",
             "ses:GetIdentityVerificationAttributes",
             "ses:GetIdentityDkimAttributes",
             "ses:DeleteIdentity",
