@@ -464,26 +464,31 @@ locals {
 
       apply_policy_statements = [
         {
-          # ses:VerifyDomainIdentity/ses:VerifyEmailIdentity create the
-          # identity itself, so there's no existing identity ARN to scope
-          # them to yet -- AWS requires Resource "*" for these two specific
-          # actions and silently denies them under an identity-ARN-scoped
-          # statement, even though most other SES identity actions (below)
-          # do support that scoping.
-          Sid      = "VerifySesIdentities"
-          Effect   = "Allow"
-          Action   = ["ses:VerifyDomainIdentity", "ses:VerifyEmailIdentity"]
+          # These calls either create/verify an identity that doesn't
+          # exist yet (VerifyDomainIdentity/VerifyEmailIdentity/
+          # VerifyDomainDkim) or read attributes via a batch-style API
+          # (GetIdentityVerificationAttributes/GetIdentityDkimAttributes,
+          # which the AWS provider also calls right after every create,
+          # as part of its own Create-then-Read cycle) -- confirmed live
+          # (twice) that AWS silently denies all of these under an
+          # identity-ARN-scoped statement regardless of the ARN being
+          # correct; SES simply doesn't support resource-level permissions
+          # for this group, unlike DeleteIdentity below.
+          Sid    = "VerifyAndReadSesIdentities"
+          Effect = "Allow"
+          Action = [
+            "ses:VerifyDomainIdentity",
+            "ses:VerifyEmailIdentity",
+            "ses:VerifyDomainDkim",
+            "ses:GetIdentityVerificationAttributes",
+            "ses:GetIdentityDkimAttributes",
+          ]
           Resource = "*"
         },
         {
           Sid    = "ManageSesIdentities"
           Effect = "Allow"
-          Action = [
-            "ses:VerifyDomainDkim",
-            "ses:GetIdentityVerificationAttributes",
-            "ses:GetIdentityDkimAttributes",
-            "ses:DeleteIdentity",
-          ]
+          Action = "ses:DeleteIdentity"
           Resource = [
             "arn:aws:ses:${local.aws_region}:${data.aws_caller_identity.current.account_id}:identity/jkandler.de",
             "arn:aws:ses:${local.aws_region}:${data.aws_caller_identity.current.account_id}:identity/julian.kandler@outlook.com",
@@ -533,16 +538,17 @@ locals {
 
       plan_policy_statements = [
         {
+          # Same Resource "*" requirement as the apply role's
+          # VerifyAndReadSesIdentities statement -- these batch-style Get
+          # calls run during plan's own state refresh once the identities
+          # exist, and don't support identity-ARN scoping.
           Sid    = "ReadSesIdentities"
           Effect = "Allow"
           Action = [
             "ses:GetIdentityVerificationAttributes",
             "ses:GetIdentityDkimAttributes",
           ]
-          Resource = [
-            "arn:aws:ses:${local.aws_region}:${data.aws_caller_identity.current.account_id}:identity/jkandler.de",
-            "arn:aws:ses:${local.aws_region}:${data.aws_caller_identity.current.account_id}:identity/julian.kandler@outlook.com",
-          ]
+          Resource = "*"
         },
         {
           Sid    = "ReadRoute53Records"
