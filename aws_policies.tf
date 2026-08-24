@@ -464,17 +464,18 @@ locals {
 
       apply_policy_statements = [
         {
-          # These calls either create/verify an identity that doesn't
-          # exist yet (VerifyDomainIdentity/VerifyEmailIdentity/
-          # VerifyDomainDkim) or read attributes via a batch-style API
-          # (GetIdentityVerificationAttributes/GetIdentityDkimAttributes,
-          # which the AWS provider also calls right after every create,
-          # as part of its own Create-then-Read cycle) -- confirmed live
-          # (twice) that AWS silently denies all of these under an
-          # identity-ARN-scoped statement regardless of the ARN being
-          # correct; SES simply doesn't support resource-level permissions
-          # for this group, unlike DeleteIdentity below.
-          Sid    = "VerifyAndReadSesIdentities"
+          # SES v1's identity-lifecycle actions -- create/verify
+          # (VerifyDomainIdentity/VerifyEmailIdentity/VerifyDomainDkim),
+          # attribute reads (GetIdentityVerificationAttributes/
+          # GetIdentityDkimAttributes, which the AWS provider also calls
+          # right after every create, as part of its own Create-then-Read
+          # cycle), and delete (DeleteIdentity) -- confirmed live, three
+          # separate times, that AWS silently denies every one of these
+          # under an identity-ARN-scoped statement regardless of the ARN
+          # being correct. SES v1 just doesn't support resource-level
+          # permissions for this group; scoping tighter than Resource "*"
+          # isn't possible for these specific actions.
+          Sid    = "ManageSesIdentities"
           Effect = "Allow"
           Action = [
             "ses:VerifyDomainIdentity",
@@ -482,17 +483,9 @@ locals {
             "ses:VerifyDomainDkim",
             "ses:GetIdentityVerificationAttributes",
             "ses:GetIdentityDkimAttributes",
+            "ses:DeleteIdentity",
           ]
           Resource = "*"
-        },
-        {
-          Sid    = "ManageSesIdentities"
-          Effect = "Allow"
-          Action = "ses:DeleteIdentity"
-          Resource = [
-            "arn:aws:ses:${local.aws_region}:${data.aws_caller_identity.current.account_id}:identity/jkandler.de",
-            "arn:aws:ses:${local.aws_region}:${data.aws_caller_identity.current.account_id}:identity/julian.kandler@outlook.com",
-          ]
         },
         {
           Sid    = "ManageRoute53Records"
