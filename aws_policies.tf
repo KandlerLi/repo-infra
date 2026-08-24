@@ -458,5 +458,105 @@ locals {
         },
       ]
     }
+
+    ses-relay = {
+      state_key = "ses-relay/terraform.tfstate"
+
+      apply_policy_statements = [
+        {
+          Sid    = "ManageSesIdentities"
+          Effect = "Allow"
+          Action = [
+            "ses:VerifyDomainIdentity",
+            "ses:VerifyDomainDkim",
+            "ses:VerifyEmailIdentity",
+            "ses:GetIdentityVerificationAttributes",
+            "ses:GetIdentityDkimAttributes",
+            "ses:DeleteIdentity",
+          ]
+          Resource = [
+            "arn:aws:ses:${local.aws_region}:${data.aws_caller_identity.current.account_id}:identity/jkandler.de",
+            "arn:aws:ses:${local.aws_region}:${data.aws_caller_identity.current.account_id}:identity/julian.kandler@outlook.com",
+          ]
+        },
+        {
+          Sid    = "ManageRoute53Records"
+          Effect = "Allow"
+          Action = [
+            "route53:ChangeResourceRecordSets",
+            "route53:GetHostedZone",
+            "route53:ListResourceRecordSets",
+            "route53:ListTagsForResource",
+          ]
+          Resource = "arn:aws:route53:::hostedzone/Z07879811I86VC8PAL8HX"
+        },
+        {
+          Sid      = "ReadRoute53Change"
+          Effect   = "Allow"
+          Action   = "route53:GetChange"
+          Resource = "arn:aws:route53:::change/*"
+        },
+        {
+          # Scoped to exactly the one dedicated user this deployment
+          # creates -- never a bare "*", so this role can manage that
+          # user's own access key but no other IAM principal.
+          Sid    = "ManageSmtpUser"
+          Effect = "Allow"
+          Action = [
+            "iam:CreateUser",
+            "iam:GetUser",
+            "iam:DeleteUser",
+            "iam:TagUser",
+            "iam:UntagUser",
+            "iam:ListUserTags",
+            "iam:PutUserPolicy",
+            "iam:GetUserPolicy",
+            "iam:DeleteUserPolicy",
+            "iam:ListUserPolicies",
+            "iam:CreateAccessKey",
+            "iam:ListAccessKeys",
+            "iam:DeleteAccessKey",
+          ]
+          Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/ses-relay-smtp"
+        },
+      ]
+
+      plan_policy_statements = [
+        {
+          Sid    = "ReadSesIdentities"
+          Effect = "Allow"
+          Action = [
+            "ses:GetIdentityVerificationAttributes",
+            "ses:GetIdentityDkimAttributes",
+          ]
+          Resource = [
+            "arn:aws:ses:${local.aws_region}:${data.aws_caller_identity.current.account_id}:identity/jkandler.de",
+            "arn:aws:ses:${local.aws_region}:${data.aws_caller_identity.current.account_id}:identity/julian.kandler@outlook.com",
+          ]
+        },
+        {
+          Sid    = "ReadRoute53Records"
+          Effect = "Allow"
+          Action = [
+            "route53:GetHostedZone",
+            "route53:ListResourceRecordSets",
+            "route53:ListTagsForResource",
+          ]
+          Resource = "arn:aws:route53:::hostedzone/Z07879811I86VC8PAL8HX"
+        },
+        {
+          Sid    = "ReadSmtpUser"
+          Effect = "Allow"
+          Action = [
+            "iam:GetUser",
+            "iam:ListUserTags",
+            "iam:GetUserPolicy",
+            "iam:ListUserPolicies",
+            "iam:ListAccessKeys",
+          ]
+          Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/ses-relay-smtp"
+        },
+      ]
+    }
   }
 }

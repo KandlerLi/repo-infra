@@ -44,6 +44,19 @@ homeserver-health-check:
   action_variables:
     ALERT_EMAIL: julian.kandler@outlook.com
 
+# SES sending identity used only to relay homeserver monitoring alert
+# emails (Alertmanager, in home-infra's monitoring role) to
+# julian.kandler@outlook.com -- separate from homeserver-health-check on
+# purpose, since that repo's own README says it's deliberately kept small
+# and not meant to grow into a general-purpose AWS monitoring stack.
+ses-relay:
+  runner: true
+  required_status_check_contexts:
+    - "Validate"
+    - "Terraform plan"
+  action_variables:
+    ALERT_EMAIL: julian.kandler@outlook.com
+
 # Backup mirrors for repos that previously existed only on one laptop, with
 # no other copy anywhere -- private, no CI, no branch protection. These are
 # single-owner git history backups, not collaboratively-protected release
