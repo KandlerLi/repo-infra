@@ -56,6 +56,7 @@ ses-relay:
     - "Terraform plan"
   action_variables:
     ALERT_EMAIL: julian.kandler@outlook.com
+    ROUTE53_ZONE_ID: Z07879811I86VC8PAL8HX
 
 # Backup mirrors for repos that previously existed only on one laptop, with
 # no other copy anywhere -- private, no CI, no branch protection. These are
