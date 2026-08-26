@@ -345,14 +345,24 @@ locals {
 
       plan_policy_statements = [
         {
-          Sid    = "ReadBudget"
-          Effect = "Allow"
-          Action = [
-            "budgets:DescribeBudget",
-            "budgets:DescribeBudgets",
-            "budgets:DescribeNotificationsForBudget",
-            "budgets:DescribeSubscribersForNotification",
-          ]
+          # AWS Budgets' IAM actions don't follow its API operation names:
+          # the API call is DescribeBudget, but confirmed live, the IAM
+          # action it actually checks is budgets:ViewBudget -- the
+          # Describe*-named actions used here before aren't real IAM
+          # actions for this service and silently granted nothing.
+          Sid      = "ReadBudget"
+          Effect   = "Allow"
+          Action   = "budgets:ViewBudget"
+          Resource = "arn:aws:budgets::${data.aws_caller_identity.current.account_id}:budget/monthly-cost-alert"
+        },
+        {
+          # Confirmed live: the AWS provider always calls
+          # ListTagsForResource when reading an aws_budgets_budget, even
+          # with no tags configured, to populate tags_all -- a separate
+          # IAM action from budgets:ViewBudget.
+          Sid      = "ReadBudgetTags"
+          Effect   = "Allow"
+          Action   = "budgets:ListTagsForResource"
           Resource = "arn:aws:budgets::${data.aws_caller_identity.current.account_id}:budget/monthly-cost-alert"
         },
       ]
