@@ -58,31 +58,6 @@ resource "github_branch_protection" "this" {
   }
 }
 
-moved {
-  from = github_actions_variable.aws_account_id
-  to   = github_actions_variable.aws_account_id[0]
-}
-
-moved {
-  from = github_actions_variable.aws_role_arn
-  to   = github_actions_variable.aws_role_arn[0]
-}
-
-moved {
-  from = github_actions_variable.aws_plan_role_arn
-  to   = github_actions_variable.aws_plan_role_arn[0]
-}
-
-moved {
-  from = github_repository_environment.production
-  to   = github_repository_environment.production[0]
-}
-
-moved {
-  from = github_branch_protection.this
-  to   = github_branch_protection.this[0]
-}
-
 resource "github_actions_variable" "aws_account_id" {
   count         = local.aws_enabled ? 1 : 0
   repository    = github_repository.this.name

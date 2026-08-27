@@ -1,6 +1,4 @@
 .terraform/
-__pycache__/
-*.py[cod]
 *.tfstate
 *.tfstate.*
 *.tfplan
