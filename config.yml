@@ -58,15 +58,24 @@ ses-relay:
     ALERT_EMAIL: julian.kandler@outlook.com
     ROUTE53_ZONE_ID: Z07879811I86VC8PAL8HX
 
+# Started as a no-CI backup mirror like the ones below, but grew a real
+# checks.yml (ansible-playbook --syntax-check + the unit test suite) since
+# it's the most actively-developed repo in this workspace. Found live: its
+# runs-on: [self-hosted, home, debian] has been queuing forever with no
+# runner able to pick it up -- runner: true was never added here, so
+# sync_github_runner_repositories.py never included it. Still private/no
+# branch protection, same single-owner-backup reasoning as the group below.
+home-infra:
+  visibility: private
+  branch_protection_enabled: false
+  runner: true
+
 # Backup mirrors for repos that previously existed only on one laptop, with
 # no other copy anywhere -- private, no CI, no branch protection. These are
 # single-owner git history backups, not collaboratively-protected release
 # repos: mandatory signed-commit PRs (repo-infra's normal baseline) would
 # only make routine backup pushes painful here, for zero actual benefit
 # (nothing runs CI against them, nobody else pushes to them).
-home-infra:
-  visibility: private
-  branch_protection_enabled: false
 
 repo-infra:
   visibility: private
