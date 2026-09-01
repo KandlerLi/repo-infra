@@ -106,6 +106,30 @@ locals {
           ]
           Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/dyndns-route53-updater-role"
         },
+        {
+          # Same shape as ses-relay's own ManageSmtpUser statement below
+          # -- scoped to exactly the one dedicated user this deployment
+          # creates, never a bare "*", so this role can manage that
+          # user's own access key but no other IAM principal.
+          Sid    = "ManageAcmeDns01User"
+          Effect = "Allow"
+          Action = [
+            "iam:CreateUser",
+            "iam:GetUser",
+            "iam:DeleteUser",
+            "iam:TagUser",
+            "iam:UntagUser",
+            "iam:ListUserTags",
+            "iam:PutUserPolicy",
+            "iam:GetUserPolicy",
+            "iam:DeleteUserPolicy",
+            "iam:ListUserPolicies",
+            "iam:CreateAccessKey",
+            "iam:ListAccessKeys",
+            "iam:DeleteAccessKey",
+          ]
+          Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/traefik-acme-dns01"
+        },
       ]
 
       plan_policy_statements = [
@@ -164,6 +188,18 @@ locals {
             "route53:ListTagsForResource",
           ]
           Resource = "arn:aws:route53:::hostedzone/Z07879811I86VC8PAL8HX"
+        },
+        {
+          Sid    = "ReadAcmeDns01User"
+          Effect = "Allow"
+          Action = [
+            "iam:GetUser",
+            "iam:ListUserTags",
+            "iam:GetUserPolicy",
+            "iam:ListUserPolicies",
+            "iam:ListAccessKeys",
+          ]
+          Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/traefik-acme-dns01"
         },
       ]
     }
