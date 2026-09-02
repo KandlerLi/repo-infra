@@ -97,10 +97,15 @@ unimplemented feature requests
 [#3251](https://github.com/integrations/terraform-provider-github/issues/3251)
 and
 [#3198](https://github.com/integrations/terraform-provider-github/issues/3198)).
-It's set once, per repository, by `dyndns/scripts/protect-repository.sh` —
-the one remaining piece of that script, kept only because there is
-currently no IaC path for this specific field. Revisit once the provider
-adds support.
+It used to be set, once per repository, by `dyndns/scripts/protect-repository.sh`
+— the one remaining piece of that script, kept only because there is
+currently no IaC path for this specific field. That script was deleted on
+2026-09-02 (even narrowed to this one setting plus collaborator pruning, it
+was still an imperative script wrapping `gh api` against live state, which
+the standing IaC-only rule forbids); see
+`home-infra-ai-context/context/repository-security-blueprint.md` for the
+manual `gh api` command to apply this by hand instead. Revisit once the
+provider adds support.
 
 AWS side (only for repositories with an entry in `aws_policies.tf`, e.g.
 `dyndns`):
