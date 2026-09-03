@@ -13,6 +13,19 @@ locals {
   aws_region = "eu-central-1"
 
   aws_policies = {
+    # k3s-apps manages zero real AWS resources -- this entry exists
+    # purely so its CI can read/write its own Terraform state in S3
+    # (added 2026-09-03 alongside moving that root to a real backend;
+    # everything it actually manages lives in the k3s cluster, reached
+    # via an in-cluster ServiceAccount, not AWS credentials at all).
+    # No apply_policy_statements/plan_policy_statements needed --
+    # modules/repo's own base role policy (IdentifyAccount/
+    # ListTerraformState/ReadWriteTerraformState) already covers
+    # exactly this, nothing more.
+    k3s-apps = {
+      state_key = "k3s-apps/terraform.tfstate"
+    }
+
     dyndns = {
       state_key = "dyndns/terraform.tfstate"
 
