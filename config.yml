@@ -53,12 +53,14 @@ aws-budget:
 # CloudWatch alarm + SNS email), deliberately the only monitoring piece
 # that runs in AWS -- the rest is planned to run on the homeserver itself
 # for cost reasons, but home-hosted monitoring can't alert about the home
-# network itself being unreachable.
+# network itself being unreachable. checks.yml/apply.yml call gha-common's
+# reusable workflows (2026-09-03) -- see aws-budget's own comment for why
+# these need the "terraform / " prefix.
 homeserver-health-check:
   runner: true
   required_status_check_contexts:
-    - "Validate"
-    - "Terraform plan"
+    - "terraform / Validate"
+    - "terraform / Terraform plan"
   action_variables:
     ALERT_EMAIL: julian.kandler@outlook.com
 
@@ -67,11 +69,14 @@ homeserver-health-check:
 # julian.kandler@outlook.com -- separate from homeserver-health-check on
 # purpose, since that repo's own README says it's deliberately kept small
 # and not meant to grow into a general-purpose AWS monitoring stack.
+# checks.yml/apply.yml call gha-common's reusable workflows (2026-09-03)
+# -- see aws-budget's own comment for why these need the "terraform / "
+# prefix.
 ses-relay:
   runner: true
   required_status_check_contexts:
-    - "Validate"
-    - "Terraform plan"
+    - "terraform / Validate"
+    - "terraform / Terraform plan"
   action_variables:
     ALERT_EMAIL: julian.kandler@outlook.com
     ROUTE53_ZONE_ID: Z07879811I86VC8PAL8HX
