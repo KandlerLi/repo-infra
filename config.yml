@@ -34,12 +34,18 @@ website:
 
 # $10/month AWS Budget alert. Self-hosted runner, same as everything else
 # now -- this repo's own apply.yml runs terraform apply directly, no
-# separate deploy step.
+# separate deploy step. checks.yml/apply.yml call gha-common's reusable
+# workflows from a job named "terraform" (2026-09-03) -- GitHub prefixes
+# a reusable workflow's own nested job names with the caller job's id in
+# every check-run/status-check context ("terraform / Validate", not just
+# "Validate"), found live when this repo's first migration PR reported
+# both checks green but GitHub still refused to merge it, still waiting
+# on the un-prefixed names below that no run will ever report again.
 aws-budget:
   runner: true
   required_status_check_contexts:
-    - "Validate"
-    - "Terraform plan"
+    - "terraform / Validate"
+    - "terraform / Terraform plan"
   action_variables:
     ALERT_EMAIL: julian.kandler@outlook.com
 
