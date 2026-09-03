@@ -1,3 +1,15 @@
+# Shared CI Dockerfile + two workflow_call reusable workflows
+# (terraform-checks.yml, terraform-apply.yml) that dyndns/website/
+# aws-budget/homeserver-health-check/ses-relay all call instead of each
+# carrying its own near-duplicate checks.yml/apply.yml/Dockerfile. Public
+# (required -- GitHub only allows cross-repo reusable workflows from a
+# personal account when the workflow's own repo is public). No runner
+# entry -- reusable-workflow jobs execute under the calling repo's own
+# runner registration and vars/secrets context, nothing ever runs inside
+# this repo itself. No required_status_check_contexts / action_variables
+# either, for the same reason: it has no CI of its own.
+gha-common: {}
+
 dyndns:
   runner: true
   required_status_check_contexts:
