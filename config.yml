@@ -121,3 +121,35 @@ home-infra-docs:
 home-infra-ai-context:
   visibility: private
   branch_protection_enabled: false
+
+# The k3s cluster's own app workloads (Blocky, ingress, Grafana,
+# home-agent, deluge, open-webui, landing-page, alertmanager) -- CI-
+# applied (2026-09-03) via a narrowly-scoped in-cluster ServiceAccount
+# (bootstrap/ in that repo, applied locally, owns the RBAC and the
+# runner itself), gated on the production environment's reviewer
+# approval before a real apply runs, same pattern as the AWS repos
+# above. Public, deliberately, not the private visibility this repo
+# had until now: GitHub's environment-reviewer protection needs a paid
+# plan for private repositories, and real secret material never
+# touches this repo's git history either way (SOPS-sourced, synced in
+# via action_secrets below, landing only in GitHub Secrets) -- only
+# its .tf files, which do describe real internal LAN topology (IPs,
+# NFS paths, node names), become publicly visible that weren't before.
+k3s-apps:
+  visibility: public
+  runner: true
+  required_status_check_contexts:
+    - "Validate"
+    - "Terraform plan"
+  action_secrets:
+    - DELUGE_WEB_PASSWORD
+    - HOME_AGENT_GHCR_TOKEN
+    - HOME_AGENT_OPENAI_API_KEY
+    - NEXTCLOUD_TOOLS_APP_PASSWORD
+    - GRAFANA_ADMIN_PASSWORD
+    - BLOCKY_POSTGRES_PASSWORD
+    - ALERTMANAGER_SES_SMTP_USERNAME
+    - ALERTMANAGER_SES_SMTP_PASSWORD
+    - SHARED_INGRESS_AUTH_PASSWORD_HASH
+    - K3S_INGRESS_ACME_DNS01_ACCESS_KEY_ID
+    - K3S_INGRESS_ACME_DNS01_SECRET_ACCESS_KEY

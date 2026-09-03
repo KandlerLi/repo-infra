@@ -8,6 +8,12 @@ variable "action_variables" {
   type        = map(string)
 }
 
+variable "action_secrets" {
+  description = "Map of GitHub Actions secrets to create (name -> real secret value, looked up by the caller from its own sensitive variables -- see action_secrets.tf). Unlike action_variables, never sourced from plain values in config.yml. Deliberately not marked sensitive itself -- for_each can't iterate a value Terraform considers wholesale sensitive, even though only the values (not the key names) actually are. Terraform still tracks each value's own sensitivity individually, since every value here traces back to a variable in action_secrets.tf that is marked sensitive."
+  type        = map(string)
+  default     = {}
+}
+
 variable "visibility" {
   description = "GitHub repository visibility"
   type        = string

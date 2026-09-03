@@ -18,8 +18,11 @@ module "repo" {
 
   for_each = local.config
 
-  repository_name                = each.key
-  action_variables               = try(each.value.action_variables, {})
+  repository_name  = each.key
+  action_variables = try(each.value.action_variables, {})
+  action_secrets = {
+    for name in try(each.value.action_secrets, []) : name => local.action_secret_values[name]
+  }
   required_status_check_contexts = try(each.value.required_status_check_contexts, [])
   visibility                     = try(each.value.visibility, "public")
   branch_protection_enabled      = try(each.value.branch_protection_enabled, true)

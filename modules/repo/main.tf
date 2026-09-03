@@ -87,6 +87,14 @@ resource "github_actions_variable" "additional" {
   value         = each.value
 }
 
+resource "github_actions_secret" "additional" {
+  for_each = var.action_secrets
+
+  repository      = github_repository.this.name
+  secret_name     = each.key
+  plaintext_value = each.value
+}
+
 
 resource "github_repository_environment" "production" {
   # GitHub's required-reviewers environment protection rule needs a paid
