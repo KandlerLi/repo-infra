@@ -114,6 +114,19 @@ terraform-state:
   visibility: private
   branch_protection_enabled: false
 
+# The k3s cluster's own bootstrap root -- the self-hosted runner itself
+# (modules/github_runner) plus the cluster-scoped PersistentVolumes a
+# namespaced Role could never be scoped to by name (see k3s-apps' own
+# split, 2026-09-03). Same category as repo-infra/terraform-state
+# above: rare, admin-privileged, applied only locally by a human, never
+# CI -- it's the thing k3s-apps' own CI runs on. Originally a second
+# Terraform root nested inside the k3s-apps repo itself; extracted into
+# its own repo here to actually live alongside its real siblings
+# instead of inside the repo it grants access to.
+k3s-bootstrap:
+  visibility: private
+  branch_protection_enabled: false
+
 home-infra-docs:
   visibility: private
   branch_protection_enabled: false
