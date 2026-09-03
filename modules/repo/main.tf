@@ -116,7 +116,17 @@ resource "github_actions_repository_permissions" "this" {
     patterns_allowed = [
       "actions/checkout@*",
       "aws-actions/configure-aws-credentials@*",
-      "hashicorp/setup-terraform@*"
+      "hashicorp/setup-terraform@*",
+      # Reusable workflows are governed by this same allowlist, not a
+      # separate mechanism -- found live (2026-09-03) when aws-budget's
+      # own checks.yml, migrated to call gha-common's terraform-checks.yml,
+      # failed at startup_failure before running a single step, because
+      # gha-common wasn't in this list. Every repo this module manages
+      # gets this uniformly, matching sha_pinning_required's own baseline
+      # treatment, since gha-common's reusable workflows are meant to be
+      # callable from any of them.
+      "KandlerLi/gha-common/.github/workflows/terraform-checks.yml@*",
+      "KandlerLi/gha-common/.github/workflows/terraform-apply.yml@*"
     ]
     verified_allowed = false
   }
