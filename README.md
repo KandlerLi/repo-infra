@@ -213,7 +213,7 @@ roles; never remove it without an explicitly approved design change.
 ## Validation
 
 ```bash
-cd /home/julian/projects/bootstrap/repo-infra
+cd /home/julian/projects/github/repo-infra
 terraform fmt -check -recursive
 terraform validate
 terraform plan
