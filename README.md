@@ -224,3 +224,15 @@ invocation time: `GITHUB_TOKEN` (and the target GitHub owner) for the GitHub
 provider, and `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/(session token) for
 a short-lived AWS identity capable of managing IAM roles/policies and the
 OIDC provider. There is no committed provider configuration for either.
+
+## Rolling out locally
+
+`scripts/roll-out.sh plan`/`apply` does all of the above in one command --
+pulls `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` for the `repo-infra-local`
+IAM identity from `pass` (see `bootstrap/terraform-state/README.md`'s
+"repo-infra-local Identity" section for how that identity and its `pass`
+entries get created) and `GITHUB_TOKEN` from `gh auth token`, runs
+`terraform fmt -check`/`validate`/`plan`, and for `apply` mode
+`terraform apply` (left interactive -- Terraform's own plan-and-confirm
+prompt is the review step). Everything it exports lives only inside the
+script's own process; nothing persists in the calling shell afterward.
