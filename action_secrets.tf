@@ -2,7 +2,7 @@
 # secret material with no OIDC-equivalent federation path (unlike the
 # AWS-deploying repos above, which never store a static secret at all).
 # k3s-apps is the first and, for now, only consumer -- its own CI
-# pipeline needs 11 values that today only exist in SOPS (home-infra's
+# pipeline needs values that today only exist in SOPS (home-infra's
 # own secrets.sops.yml, plus k3s-apps' own for nextcloud_tools_app_password).
 #
 # Deliberately NOT plain values in config.yml the way action_variables
@@ -77,6 +77,26 @@ variable "k3s_ingress_acme_dns01_secret_access_key" {
   sensitive = true
 }
 
+variable "authelia_session_secret" {
+  type      = string
+  sensitive = true
+}
+
+variable "authelia_storage_encryption_key" {
+  type      = string
+  sensitive = true
+}
+
+variable "authelia_reset_password_jwt_secret" {
+  type      = string
+  sensitive = true
+}
+
+variable "authelia_admin_password_hash" {
+  type      = string
+  sensitive = true
+}
+
 locals {
   # Keyed by GitHub secret name (upper snake case, matching GitHub's
   # own convention), not the TF_VAR name -- config.yml's action_secrets
@@ -94,5 +114,9 @@ locals {
     SHARED_INGRESS_AUTH_PASSWORD_HASH        = var.shared_ingress_auth_password_hash
     K3S_INGRESS_ACME_DNS01_ACCESS_KEY_ID     = var.k3s_ingress_acme_dns01_access_key_id
     K3S_INGRESS_ACME_DNS01_SECRET_ACCESS_KEY = var.k3s_ingress_acme_dns01_secret_access_key
+    AUTHELIA_SESSION_SECRET                  = var.authelia_session_secret
+    AUTHELIA_STORAGE_ENCRYPTION_KEY          = var.authelia_storage_encryption_key
+    AUTHELIA_RESET_PASSWORD_JWT_SECRET       = var.authelia_reset_password_jwt_secret
+    AUTHELIA_ADMIN_PASSWORD_HASH             = var.authelia_admin_password_hash
   }
 }
