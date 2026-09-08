@@ -14,13 +14,14 @@
 # actually declared ever reach that repository's own module.repo
 # invocation (see main.tf's own action_secrets wiring).
 #
-# Source these the same way k3s-apps' own local applies already do --
-# `source ../../infra/k3s-apps/scripts/export-tf-vars.sh` before
-# running terraform plan/apply here (sibling directory layout assumed;
-# override HOME_INFRA_DIR the same way that script's own README
-# section does if yours differs). Deliberately reusing that script
-# rather than duplicating its SOPS-key-to-TF_VAR mapping a second time
-# here -- every name below already matches what it exports exactly.
+# scripts/roll-out.sh sources these automatically (k3s-apps' own
+# scripts/export-tf-vars.sh, sibling directory layout assumed --
+# override K3S_APPS_DIR if yours differs, see that script's own
+# comment); running terraform directly instead still needs `source
+# ../../infra/k3s-apps/scripts/export-tf-vars.sh` by hand first.
+# Deliberately reusing that script rather than duplicating its
+# SOPS-key-to-TF_VAR mapping a second time here -- every name below
+# already matches what it exports exactly.
 
 variable "home_agent_ghcr_token" {
   type      = string
