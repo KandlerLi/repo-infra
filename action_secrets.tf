@@ -113,6 +113,11 @@ variable "authelia_oidc_openwebui_client_secret_hash" {
   sensitive = true
 }
 
+variable "authelia_oidc_nextcloud_client_secret_hash" {
+  type      = string
+  sensitive = true
+}
+
 variable "authelia_oidc_grafana_client_secret" {
   type      = string
   sensitive = true
@@ -147,6 +152,7 @@ locals {
     AUTHELIA_OIDC_ISSUER_PRIVATE_KEY           = var.authelia_oidc_issuer_private_key
     AUTHELIA_OIDC_GRAFANA_CLIENT_SECRET_HASH   = var.authelia_oidc_grafana_client_secret_hash
     AUTHELIA_OIDC_OPENWEBUI_CLIENT_SECRET_HASH = var.authelia_oidc_openwebui_client_secret_hash
+    AUTHELIA_OIDC_NEXTCLOUD_CLIENT_SECRET_HASH = var.authelia_oidc_nextcloud_client_secret_hash
     AUTHELIA_OIDC_GRAFANA_CLIENT_SECRET        = var.authelia_oidc_grafana_client_secret
     AUTHELIA_OIDC_OPENWEBUI_CLIENT_SECRET      = var.authelia_oidc_openwebui_client_secret
   }
