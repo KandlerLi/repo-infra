@@ -12,25 +12,58 @@
 locals {
   aws_region = "eu-central-1"
 
+  # k3s-apps' own read access to the Secrets Manager groups its
+  # Terraform reads directly (data "aws_secretsmanager_secret_version",
+  # k3s-apps' own secrets.tf) -- the SOPS-to-Secrets-Manager cutover,
+  # PARKED.md's own writeup. Deliberately identical for apply AND plan:
+  # unlike dyndns's own ManageDynDnsSecret/ReadDynDnsSecretMetadata
+  # split (where the plan role never needs the real value, since that
+  # secret is Lambda-runtime-only), these values flow directly into
+  # Terraform's own jsondecode() locals, so even a plan needs
+  # GetSecretValue to compute a diff, not just DescribeSecret. ARNs are
+  # hand-built with a trailing "-*" wildcard for the random suffix
+  # Secrets Manager appends, matching dyndns's own established
+  # convention -- these are a different repo's own resources
+  # (bootstrap/terraform-state), so there's no real Terraform resource
+  # reference to use here the way that repo's own operator.tf could.
+  # Excludes home-infra/nextcloud (Ansible-only, infra/home-infra never
+  # touches this repo) and home-infra/github-runner
+  # (bootstrap/k3s-bootstrap's own, not k3s-apps').
+  k3s_apps_secretsmanager_read_statements = [
+    {
+      Sid    = "ReadSecretsManagerSecrets"
+      Effect = "Allow"
+      Action = [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret",
+      ]
+      Resource = [
+        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/authelia-*",
+        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/grafana-*",
+        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/open-webui-*",
+        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/ingress-*",
+        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/home-agent-*",
+        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/monitoring-*",
+        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/blocky-*",
+        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/sankey-export-*",
+      ]
+    },
+  ]
+
   aws_policies = {
-    # k3s-apps manages zero real AWS resources -- this entry exists
-    # purely so its CI can read/write its own Terraform state in S3
-    # (added 2026-09-03 alongside moving that root to a real backend;
-    # everything it actually manages lives in the k3s cluster, reached
-    # via an in-cluster ServiceAccount, not AWS credentials at all).
-    # Empty statement lists, not omitted -- local.aws_policies is a
-    # plain map literal, not a typed object(...) with optional()
-    # fields, so Terraform infers its element type from every entry
-    # together; one entry missing a key every other entry has fails
-    # main.tf's own .apply_policy_statements/.plan_policy_statements
-    # lookup for *this* key at plan time, confirmed live. modules/repo's
-    # own base role policy (IdentifyAccount/ListTerraformState/
-    # ReadWriteTerraformState) already covers exactly what this repo
-    # needs regardless.
+    # k3s-apps manages zero real AWS resources of its own -- this
+    # entry's own baseline exists purely so its CI can read/write its
+    # own Terraform state in S3 (added 2026-09-03 alongside moving that
+    # root to a real backend; everything it actually manages lives in
+    # the k3s cluster, reached via an in-cluster ServiceAccount, not AWS
+    # credentials at all). Secrets Manager read access (above) is the
+    # one real exception -- added once this root's own Terraform started
+    # reading secret values directly instead of taking them as
+    # GitHub-Actions-secret-sourced TF_VAR_* input.
     k3s-apps = {
       state_key               = "k3s-apps/terraform.tfstate"
-      apply_policy_statements = []
-      plan_policy_statements  = []
+      apply_policy_statements = local.k3s_apps_secretsmanager_read_statements
+      plan_policy_statements  = local.k3s_apps_secretsmanager_read_statements
     }
 
     dyndns = {
