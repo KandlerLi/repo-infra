@@ -20,9 +20,19 @@ module "repo" {
 
   repository_name  = each.key
   action_variables = try(each.value.action_variables, {})
-  action_secrets = {
-    for name in try(each.value.action_secrets, []) : name => local.action_secret_values[name]
-  }
+  # No live source for this any more -- action_secrets.tf (the
+  # TF_VAR_*-sourced values behind it) was deleted 2026-09-09 once
+  # k3s-apps, its only consumer, finished moving every one of those
+  # secrets to AWS Secrets Manager (read directly at `terraform plan`
+  # time via k3s-apps' own secrets.tf, not a GitHub Actions secret at
+  # all any more -- see PARKED.md's SOPS-to-Secrets-Manager writeup).
+  # config.yml's own action_secrets: lists are gone with it. Left as an
+  # empty map, not removed outright -- modules/repo's own
+  # action_secrets variable is a generic mechanism for a real secret
+  # with no OIDC/Secrets-Manager equivalent, worth keeping for the next
+  # repo that actually needs one; re-wire a fresh sensitive-variables
+  # file the same shape as the old action_secrets.tf when that happens.
+  action_secrets                 = {}
   required_status_check_contexts = try(each.value.required_status_check_contexts, [])
   visibility                     = try(each.value.visibility, "public")
   branch_protection_enabled      = try(each.value.branch_protection_enabled, true)

@@ -9,7 +9,7 @@ variable "action_variables" {
 }
 
 variable "action_secrets" {
-  description = "Map of GitHub Actions secrets to create (name -> real secret value, looked up by the caller from its own sensitive variables -- see action_secrets.tf). Unlike action_variables, never sourced from plain values in config.yml. Deliberately not marked sensitive itself -- for_each can't iterate a value Terraform considers wholesale sensitive, even though only the values (not the key names) actually are. Terraform still tracks each value's own sensitivity individually, since every value here traces back to a variable in action_secrets.tf that is marked sensitive."
+  description = "Map of GitHub Actions secrets to create (name -> real secret value, looked up by the caller from its own sensitive variables). Unlike action_variables, never sourced from plain values in config.yml. Deliberately not marked sensitive itself -- for_each can't iterate a value Terraform considers wholesale sensitive, even though only the values (not the key names) actually are. Terraform still tracks each value's own sensitivity individually, as long as the caller's own values are themselves sensitive-marked. Currently unused by every repo in config.yml -- the SOPS-to-Secrets-Manager cutover (PARKED.md) moved its one real consumer (k3s-apps) off GitHub Actions secrets entirely; kept as a generic mechanism for a future secret with no OIDC/Secrets-Manager equivalent."
   type        = map(string)
   default     = {}
 }
