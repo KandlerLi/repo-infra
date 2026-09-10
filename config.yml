@@ -127,6 +127,18 @@ k3s-bootstrap:
   visibility: private
   branch_protection_enabled: false
 
+# The AWS Secrets Manager secret *containers*, migrated one at a time out
+# of terraform-state (secrets_manager.tf) so the secrets concern is
+# separable from the state-bucket bootstrap concern. Same category as the
+# three above: rare, admin-privileged, applied only locally by a human as
+# root -- it grants julian its own Secrets Manager access, so julian must
+# never apply it (the operator.tf self-escalation guarantee). No runner,
+# no aws_policies.tf entry -- backup-mirror-only here, like every other
+# bootstrap-category root.
+secrets-manager:
+  visibility: private
+  branch_protection_enabled: false
+
 home-infra-docs:
   visibility: private
   branch_protection_enabled: false
