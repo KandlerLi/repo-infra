@@ -50,6 +50,23 @@ locals {
     },
   ]
 
+  # Write access for the scheduled blocky_postgres_password rotation
+  # workflow (infra/k3s-apps' own rotate-blocky-postgres.yml) -- the
+  # only secret this CI role can ever write, and apply-only, matching
+  # dyndns's own ManageDynDnsSecret/ReadDynDnsSecretMetadata split
+  # above (a plan never needs to write anything). Deliberately its own
+  # statement, not folded into the broad read list, so the blast
+  # radius of a compromised token is exactly one secret's write access,
+  # not every secret this role can read.
+  k3s_apps_blocky_rotation_statement = [
+    {
+      Sid      = "RotateBlockyPostgresPassword"
+      Effect   = "Allow"
+      Action   = "secretsmanager:PutSecretValue"
+      Resource = "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/blocky-*"
+    },
+  ]
+
   aws_policies = {
     # k3s-apps manages zero real AWS resources of its own -- this
     # entry's own baseline exists purely so its CI can read/write its
@@ -59,11 +76,16 @@ locals {
     # credentials at all). Secrets Manager read access (above) is the
     # one real exception -- added once this root's own Terraform started
     # reading secret values directly instead of taking them as
-    # GitHub-Actions-secret-sourced TF_VAR_* input.
+    # GitHub-Actions-secret-sourced TF_VAR_* input. PutSecretValue on
+    # home-infra/blocky specifically (also above) is apply-only, added
+    # 2026-09-12 for the scheduled rotation workflow.
     k3s-apps = {
-      state_key               = "k3s-apps/terraform.tfstate"
-      apply_policy_statements = local.k3s_apps_secretsmanager_read_statements
-      plan_policy_statements  = local.k3s_apps_secretsmanager_read_statements
+      state_key = "k3s-apps/terraform.tfstate"
+      apply_policy_statements = concat(
+        local.k3s_apps_secretsmanager_read_statements,
+        local.k3s_apps_blocky_rotation_statement,
+      )
+      plan_policy_statements = local.k3s_apps_secretsmanager_read_statements
     }
 
     dyndns = {
