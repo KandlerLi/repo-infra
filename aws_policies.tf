@@ -24,11 +24,16 @@ locals {
   # hand-built with a trailing "-*" wildcard for the random suffix
   # Secrets Manager appends, matching dyndns's own established
   # convention -- these are a different repo's own resources
-  # (bootstrap/terraform-state), so there's no real Terraform resource
+  # (bootstrap/secrets-manager, or still bootstrap/terraform-state for
+  # any group not yet migrated -- see that repo's own README for the
+  # migration-status table), so there's no real Terraform resource
   # reference to use here the way that repo's own operator.tf could.
-  # Excludes home-infra/nextcloud (Ansible-only, infra/home-infra never
-  # touches this repo) and home-infra/github-runner
-  # (bootstrap/k3s-bootstrap's own, not k3s-apps').
+  # k3s-apps/ghcr-pull-token is a genuinely new secret (split out of
+  # home-infra/home-agent 2026-09-12), not a migration, but reads the
+  # same way. Excludes home-infra/nextcloud (Ansible-only,
+  # infra/home-infra never touches this repo) and
+  # home-infra/github-runner (bootstrap/k3s-bootstrap's own, not
+  # k3s-apps').
   k3s_apps_secretsmanager_read_statements = [
     {
       Sid    = "ReadSecretsManagerSecrets"
@@ -46,6 +51,7 @@ locals {
         "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/monitoring-*",
         "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/blocky-*",
         "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/sankey-export-*",
+        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/ghcr-pull-token-*",
       ]
     },
   ]
