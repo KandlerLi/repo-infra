@@ -159,7 +159,15 @@ resource "github_actions_repository_permissions" "this" {
       # wasn't enough, since it in turn calls these two to install the
       # trivy binary and cache it.
       "aquasecurity/setup-trivy@*",
-      "actions/cache@*"
+      "actions/cache@*",
+      # actions/cache@* alone doesn't cover these -- found live
+      # (2026-09-13, same dyndns run, one layer deeper still): GitHub
+      # matches each of a repo's separate action.yml entry points
+      # (cache, cache/restore, cache/save) as distinct action
+      # references, not by owning repository. setup-trivy calls these
+      # two specifically, never the bare actions/cache.
+      "actions/cache/restore@*",
+      "actions/cache/save@*"
     ]
     verified_allowed = false
   }
