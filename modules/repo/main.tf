@@ -153,7 +153,13 @@ resource "github_actions_repository_permissions" "this" {
       # governs every action a repo's workflows transitively run, not only
       # the top-level reusable workflow reference. Same fix needed for
       # every repo this module manages, since they all share this list.
-      "aquasecurity/trivy-action@*"
+      "aquasecurity/trivy-action@*",
+      # trivy-action's own two nested actions -- found live (2026-09-13,
+      # same dyndns run, one layer deeper): allowing trivy-action itself
+      # wasn't enough, since it in turn calls these two to install the
+      # trivy binary and cache it.
+      "aquasecurity/setup-trivy@*",
+      "actions/cache@*"
     ]
     verified_allowed = false
   }
