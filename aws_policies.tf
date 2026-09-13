@@ -79,13 +79,20 @@ locals {
   # only ever creates empty aws_secretsmanager_secret *containers* under
   # the three name prefixes it already manages -- never GetSecretValue,
   # PutSecretValue, or DeleteSecret, none of which this repo's Terraform
-  # ever calls. DescribeSecret alone covers every existing container's
-  # state refresh; CreateSecret is the one real write permission, scoped
+  # ever calls. CreateSecret is the one real write permission, scoped
   # to exactly these prefixes so a compromised run can create a bogus
   # empty container at worst, never touch an actual secret value or
   # anywhere outside them. Identical for plan and apply -- a speculative
   # plan never actually creates anything regardless of what it's allowed
-  # to, and a plan still needs DescribeSecret to refresh state.
+  # to, and a plan still needs the same read actions apply does to
+  # refresh state. DescribeSecret alone wasn't enough -- found live on
+  # this PR's own first real plan run: the AWS provider's
+  # aws_secretsmanager_secret read also calls GetResourcePolicy on every
+  # refresh (checking for a resource-based policy, whether or not one
+  # exists), a separate IAM action neither this repo's own Terraform nor
+  # DescribeSecret's own name would suggest -- same category of gap
+  # ADR 0018 already anticipated (SNS/Budgets hit the same "the real API
+  # surface needs more than the obviously-named action" pattern before).
   secrets_manager_statements = [
     {
       Sid    = "ManageSecretContainers"
@@ -93,6 +100,7 @@ locals {
       Action = [
         "secretsmanager:CreateSecret",
         "secretsmanager:DescribeSecret",
+        "secretsmanager:GetResourcePolicy",
       ]
       Resource = [
         "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/*",
