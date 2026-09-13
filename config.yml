@@ -92,11 +92,18 @@ ses-relay:
 # it's the most actively-developed repo in this workspace. Found live: its
 # runs-on: [self-hosted, home, debian] has been queuing forever with no
 # runner able to pick it up -- runner: true was never added here, so
-# sync_github_runner_repositories.py never included it. Still private/no
-# branch protection, same single-owner-backup reasoning as the group below.
+# sync_github_runner_repositories.py never included it. That's since been
+# fixed (runner: true below); made public with the same branch protection
+# as every other public repo 2026-09-13, once its own content was checked
+# for anything that would've been a blocker (no hardcoded secrets --
+# AWS Secrets Manager now, not this repo -- and only private RFC1918
+# addresses, not anything internet-routable). checks.yml's own trigger
+# had to move from push to pull_request first (separate PR,
+# home-infra#27) so the required "Validate" check actually fires against
+# a PR, not only after it's already merged.
 home-infra:
-  visibility: private
-  branch_protection_enabled: false
+  required_status_check_contexts:
+    - "Validate"
   runner: true
 
 # Backup mirrors for repos that previously existed only on one laptop, with
