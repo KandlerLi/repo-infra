@@ -146,7 +146,14 @@ resource "github_actions_repository_permissions" "this" {
       # treatment, since gha-common's reusable workflows are meant to be
       # callable from any of them.
       "KandlerLi/gha-common/.github/workflows/terraform-checks.yml@*",
-      "KandlerLi/gha-common/.github/workflows/terraform-apply.yml@*"
+      "KandlerLi/gha-common/.github/workflows/terraform-apply.yml@*",
+      "KandlerLi/gha-common/.github/workflows/trivy-config.yml@*",
+      # trivy-config.yml's own action, not just the reusable workflow that
+      # calls it -- found live (2026-09-13) against dyndns: this allowlist
+      # governs every action a repo's workflows transitively run, not only
+      # the top-level reusable workflow reference. Same fix needed for
+      # every repo this module manages, since they all share this list.
+      "aquasecurity/trivy-action@*"
     ]
     verified_allowed = false
   }
