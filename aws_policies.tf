@@ -24,9 +24,8 @@ locals {
   # hand-built with a trailing "-*" wildcard for the random suffix
   # Secrets Manager appends, matching dyndns's own established
   # convention -- these are a different repo's own resources
-  # (bootstrap/secrets-manager, or still bootstrap/terraform-state for
-  # any group not yet migrated -- see that repo's own README for the
-  # migration-status table), so there's no real Terraform resource
+  # (aws/secrets-manager, moved there from bootstrap/ 2026-09-13 --
+  # see that repo's own README), so there's no real Terraform resource
   # reference to use here the way that repo's own operator.tf could.
   # k3s-apps/ghcr-pull-token is a genuinely new secret (split out of
   # home-infra/home-agent 2026-09-12), not a migration, but reads the
@@ -73,7 +72,7 @@ locals {
     },
   ]
 
-  # bootstrap/secrets-manager's own CI role, added 2026-09-13 once this
+  # aws/secrets-manager's own CI role, added 2026-09-13 once this
   # root's real risk profile turned out not to match terraform-state/
   # k3s-bootstrap's (see that repo's own README): it never touches IAM,
   # only ever creates empty aws_secretsmanager_secret *containers* under
