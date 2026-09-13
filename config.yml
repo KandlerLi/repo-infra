@@ -129,15 +129,33 @@ k3s-bootstrap:
 
 # The AWS Secrets Manager secret *containers*, migrated one at a time out
 # of terraform-state (secrets_manager.tf) so the secrets concern is
-# separable from the state-bucket bootstrap concern. Same category as the
-# three above: rare, admin-privileged, applied only locally by a human as
-# root -- it grants julian its own Secrets Manager access, so julian must
-# never apply it (the operator.tf self-escalation guarantee). No runner,
-# no aws_policies.tf entry -- backup-mirror-only here, like every other
-# bootstrap-category root.
+# separable from the state-bucket bootstrap concern. Unlike the three
+# roots above, this one does NOT actually share their self-escalation
+# risk: it never touches IAM at all -- julian's own read/write grant on
+# every secret lives entirely in terraform-state/operator.tf, deliberately
+# kept out of this repo (see its own README, "IAM grants live in
+# terraform-state, not here"). It only ever creates empty
+# aws_secretsmanager_secret *containers* -- no GetSecretValue,
+# PutSecretValue, or DeleteSecret anywhere in its Terraform. CI-applied
+# 2026-09-13 via its own dedicated OIDC role (aws_policies.tf), scoped to
+# exactly CreateSecret/DescribeSecret on the name prefixes it already
+# manages -- a compromised run can create a bogus empty container at
+# worst, never read or write an actual secret value.
+#
+# Public, deliberately, same reasoning and precedent as k3s-apps: classic
+# branch protection rules need a paid plan for private repositories on
+# GitHub (confirmed live 2026-09-13 -- github_branch_protection failed
+# outright with "Upgrade to GitHub Pro or make this repository public").
+# No real secret material ever touches this repo's git history either
+# way (every aws_secretsmanager_secret resource is container-only) --
+# only secret names/descriptions become publicly visible that weren't
+# before, e.g. "Blocky's own Postgres query-log password".
 secrets-manager:
-  visibility: private
-  branch_protection_enabled: false
+  visibility: public
+  runner: true
+  required_status_check_contexts:
+    - "terraform / Validate"
+    - "terraform / Terraform plan"
 
 home-infra-docs:
   visibility: private

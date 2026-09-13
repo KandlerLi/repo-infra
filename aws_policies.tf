@@ -73,6 +73,35 @@ locals {
     },
   ]
 
+  # bootstrap/secrets-manager's own CI role, added 2026-09-13 once this
+  # root's real risk profile turned out not to match terraform-state/
+  # k3s-bootstrap's (see that repo's own README): it never touches IAM,
+  # only ever creates empty aws_secretsmanager_secret *containers* under
+  # the three name prefixes it already manages -- never GetSecretValue,
+  # PutSecretValue, or DeleteSecret, none of which this repo's Terraform
+  # ever calls. DescribeSecret alone covers every existing container's
+  # state refresh; CreateSecret is the one real write permission, scoped
+  # to exactly these prefixes so a compromised run can create a bogus
+  # empty container at worst, never touch an actual secret value or
+  # anywhere outside them. Identical for plan and apply -- a speculative
+  # plan never actually creates anything regardless of what it's allowed
+  # to, and a plan still needs DescribeSecret to refresh state.
+  secrets_manager_statements = [
+    {
+      Sid    = "ManageSecretContainers"
+      Effect = "Allow"
+      Action = [
+        "secretsmanager:CreateSecret",
+        "secretsmanager:DescribeSecret",
+      ]
+      Resource = [
+        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/*",
+        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/*",
+        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:dyndns/*",
+      ]
+    },
+  ]
+
   aws_policies = {
     # k3s-apps manages zero real AWS resources of its own -- this
     # entry's own baseline exists purely so its CI can read/write its
@@ -693,6 +722,12 @@ locals {
           Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/ses-relay-smtp"
         },
       ]
+    }
+
+    secrets-manager = {
+      state_key               = "secrets-manager/terraform.tfstate"
+      apply_policy_statements = local.secrets_manager_statements
+      plan_policy_statements  = local.secrets_manager_statements
     }
   }
 }
