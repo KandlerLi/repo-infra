@@ -59,9 +59,12 @@ website:
 # on the un-prefixed names below that no run will ever report again.
 aws-budget:
   runner: true
+  # trivy-config added 2026-09-14 -- this repo was already confirmed
+  # clean on its very first run (0 findings), nothing to fix.
   required_status_check_contexts:
     - "terraform / Validate"
     - "terraform / Terraform plan"
+    - "trivy-config / Trivy config scan"
   action_variables:
     ALERT_EMAIL: julian.kandler@outlook.com
 
