@@ -37,9 +37,14 @@ dyndns:
 # prefix.
 website:
   runner: true
+  # trivy-config added 2026-09-14 once this repo's own findings were
+  # actually fixed (PARKED.md's "Security audit" entry, including the
+  # bucket-rename incident that entry documents in full) rather than
+  # left open.
   required_status_check_contexts:
     - "terraform / Validate"
     - "terraform / Terraform plan"
+    - "trivy-config / Trivy config scan"
   action_variables:
     ROUTE53_ZONE_ID: Z07879811I86VC8PAL8HX
 
@@ -69,9 +74,14 @@ aws-budget:
 # these need the "terraform / " prefix.
 homeserver-health-check:
   runner: true
+  # trivy-config added 2026-09-14 once this repo's own findings were
+  # actually fixed (PARKED.md's "Security audit" entry -- a dedicated
+  # us-east-1 KMS key for its SNS topic, since the shared workspace key
+  # can't cross regions).
   required_status_check_contexts:
     - "terraform / Validate"
     - "terraform / Terraform plan"
+    - "trivy-config / Trivy config scan"
   action_variables:
     ALERT_EMAIL: julian.kandler@outlook.com
 
@@ -85,9 +95,13 @@ homeserver-health-check:
 # prefix.
 ses-relay:
   runner: true
+  # trivy-config added 2026-09-14 once this repo's own findings were
+  # actually fixed (PARKED.md's "Security audit" entry -- ses-relay-smtp's
+  # policy moved to an IAM group).
   required_status_check_contexts:
     - "terraform / Validate"
     - "terraform / Terraform plan"
+    - "trivy-config / Trivy config scan"
   action_variables:
     ALERT_EMAIL: julian.kandler@outlook.com
     ROUTE53_ZONE_ID: Z07879811I86VC8PAL8HX
@@ -216,6 +230,15 @@ home-infra-ai-context:
 k3s-apps:
   visibility: public
   runner: true
+  # trivy-config added 2026-09-14 once this repo's own findings were
+  # actually fixed (PARKED.md's "Security audit" entry -- k3s-apps#52,
+  # containers/sankey-export/Dockerfile's DS-0002/DS-0026). Named
+  # "trivy-config / Trivy config scan" like every other repo's, not
+  # un-prefixed like this repo's own Validate/Terraform plan above --
+  # the prefix comes from security-scan.yml calling gha-common's
+  # reusable workflow, regardless of how this repo's own inline
+  # checks.yml happens to name its contexts.
   required_status_check_contexts:
     - "Validate"
     - "Terraform plan"
+    - "trivy-config / Trivy config scan"
