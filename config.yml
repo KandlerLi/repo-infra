@@ -111,15 +111,26 @@ home-infra:
 # single-owner git history backups, not collaboratively-protected release
 # repos: mandatory signed-commit PRs (repo-infra's normal baseline) would
 # only make routine backup pushes painful here, for zero actual benefit
-# (nothing runs CI against them, nobody else pushes to them).
+# (nothing runs CI against them, nobody else pushes to them). terraform-state
+# is the exception below -- it grew a real CI check (trivy config) and
+# standard branch protection once it had findings worth actually gating
+# merges on, same reasoning as home-infra's own move above.
 
 repo-infra:
   visibility: private
   branch_protection_enabled: false
 
+# Standard branch protection enabled 2026-09-14, same block every public
+# repo gets (required PR + signed commits + linear history + the named
+# status check, 0 required approvals since single-maintainer) -- once this
+# repo's own trivy findings were actually triaged/fixed rather than left
+# open, so the required check means something instead of blocking every
+# future PR unconditionally. See PARKED.md's "Security audit" entry for
+# what got fixed vs. deliberately suppressed with a documented reason.
 terraform-state:
   visibility: private
-  branch_protection_enabled: false
+  required_status_check_contexts:
+    - "trivy-config / Trivy config scan"
 
 # The k3s cluster's own bootstrap root -- the self-hosted runner itself
 # (modules/github_runner) plus the cluster-scoped PersistentVolumes a
