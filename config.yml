@@ -202,9 +202,14 @@ k3s-bootstrap:
 secrets-manager:
   visibility: public
   runner: true
+  # trivy-config added 2026-09-14 once this repo's own findings were
+  # actually fixed -- all 12 AWS-0098s suppressed with a documented
+  # reason (PARKED.md's "Security audit" entry / this repo's own
+  # README.md).
   required_status_check_contexts:
     - "terraform / Validate"
     - "terraform / Terraform plan"
+    - "trivy-config / Trivy config scan"
 
 home-infra-docs:
   visibility: private
