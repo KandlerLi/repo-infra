@@ -821,6 +821,26 @@ locals {
           ]
           Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/ses-relay-smtp"
         },
+        {
+          # Fixes trivy's AWS-0143 (policy attached directly to a user)
+          # -- ses-relay-smtp's inline policy moves onto a new group with
+          # that user as its only member. Same shape as dyndns's own
+          # ManageAcmeDns01Group grant.
+          Sid    = "ManageSmtpGroup"
+          Effect = "Allow"
+          Action = [
+            "iam:CreateGroup",
+            "iam:DeleteGroup",
+            "iam:GetGroup",
+            "iam:PutGroupPolicy",
+            "iam:GetGroupPolicy",
+            "iam:DeleteGroupPolicy",
+            "iam:ListGroupPolicies",
+            "iam:AddUserToGroup",
+            "iam:RemoveUserFromGroup",
+          ]
+          Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:group/ses-relay-smtp"
+        },
       ]
 
       plan_policy_statements = [
@@ -858,6 +878,16 @@ locals {
             "iam:ListAccessKeys",
           ]
           Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/ses-relay-smtp"
+        },
+        {
+          Sid    = "ReadSmtpGroup"
+          Effect = "Allow"
+          Action = [
+            "iam:GetGroup",
+            "iam:GetGroupPolicy",
+            "iam:ListGroupPolicies",
+          ]
+          Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:group/ses-relay-smtp"
         },
       ]
     }
