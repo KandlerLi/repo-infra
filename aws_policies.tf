@@ -247,6 +247,28 @@ locals {
           ]
           Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/traefik-acme-dns01"
         },
+        {
+          # Fixes trivy's AWS-0143 (policy attached directly to a user,
+          # not a group/role) -- moves acme_dns01's own inline policy
+          # onto a new group with this one user as its only member.
+          # AddUserToGroup/RemoveUserFromGroup only require permission on
+          # the group resource, not the user, per IAM's own action
+          # reference for these two.
+          Sid    = "ManageAcmeDns01Group"
+          Effect = "Allow"
+          Action = [
+            "iam:CreateGroup",
+            "iam:DeleteGroup",
+            "iam:GetGroup",
+            "iam:PutGroupPolicy",
+            "iam:GetGroupPolicy",
+            "iam:DeleteGroupPolicy",
+            "iam:ListGroupPolicies",
+            "iam:AddUserToGroup",
+            "iam:RemoveUserFromGroup",
+          ]
+          Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:group/acme-dns01-challenge"
+        },
       ]
 
       plan_policy_statements = [
@@ -317,6 +339,16 @@ locals {
             "iam:ListAccessKeys",
           ]
           Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/traefik-acme-dns01"
+        },
+        {
+          Sid    = "ReadAcmeDns01Group"
+          Effect = "Allow"
+          Action = [
+            "iam:GetGroup",
+            "iam:GetGroupPolicy",
+            "iam:ListGroupPolicies",
+          ]
+          Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:group/acme-dns01-challenge"
         },
       ]
     }
