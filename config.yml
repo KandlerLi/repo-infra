@@ -127,8 +127,20 @@ repo-infra:
 # open, so the required check means something instead of blocking every
 # future PR unconditionally. See PARKED.md's "Security audit" entry for
 # what got fixed vs. deliberately suppressed with a documented reason.
+#
+# Made public the same day, deliberately: GitHub's classic branch
+# protection API requires a paid plan for private repositories (found
+# live -- github_repository_environment.production applied fine,
+# github_branch_protection then failed with "Upgrade to GitHub Pro or
+# make this repository public"). A real tradeoff weighed explicitly, not
+# a default -- this repo is the account's own IAM operator identity,
+# KMS key, and CloudTrail config, so publishing it does expose the exact
+# permission-boundary structure. Judged acceptable because none of that
+# is a credential (every access key stays in `pass`/PGP-encrypted or
+# human-only, never in git) and the self-escalation design this repo's
+# own comments already document was built to hold up under scrutiny, not
+# to depend on the policy shape staying secret.
 terraform-state:
-  visibility: private
   required_status_check_contexts:
     - "trivy-config / Trivy config scan"
 
