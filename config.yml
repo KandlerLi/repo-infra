@@ -15,9 +15,14 @@ gha-common: {}
 # prefix.
 dyndns:
   runner: true
+  # trivy-config added 2026-09-14 once this repo's own findings were
+  # actually fixed (PARKED.md's "Security audit" entry) rather than
+  # left open -- confirmed clean on main first, same discipline as
+  # terraform-state's own required-check addition.
   required_status_check_contexts:
     - "terraform / Validate"
     - "terraform / Terraform plan"
+    - "trivy-config / Trivy config scan"
   action_variables:
     ROUTE53_ZONE_ID: Z07879811I86VC8PAL8HX
 
