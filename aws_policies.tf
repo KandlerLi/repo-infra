@@ -750,6 +750,18 @@ locals {
             "arn:aws:kms:us-east-1:${data.aws_caller_identity.current.account_id}:alias/homeserver-health-check",
           ]
         },
+        {
+          # Found live 2026-09-14: the aws_kms_alias *resource* (not
+          # just a data source lookup, like dyndns/website's own gap)
+          # also needs this to refresh its own state during plan/apply
+          # -- ManageKmsKey's CreateAlias/DeleteAlias/UpdateAlias above
+          # weren't enough on their own. No resource-level scoping
+          # possible for this action.
+          Sid      = "ListKmsAliases"
+          Effect   = "Allow"
+          Action   = "kms:ListAliases"
+          Resource = "*"
+        },
       ]
 
       plan_policy_statements = [
@@ -799,6 +811,12 @@ locals {
             "arn:aws:kms:us-east-1:${data.aws_caller_identity.current.account_id}:key/*",
             "arn:aws:kms:us-east-1:${data.aws_caller_identity.current.account_id}:alias/homeserver-health-check",
           ]
+        },
+        {
+          Sid      = "ListKmsAliases"
+          Effect   = "Allow"
+          Action   = "kms:ListAliases"
+          Resource = "*"
         },
       ]
     }
