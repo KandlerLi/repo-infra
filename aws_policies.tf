@@ -9,6 +9,18 @@
 # add a matching entry here with its state key and the IAM statements its
 # deployment needs. See README.md for the full walkthrough.
 
+# bootstrap/terraform-state's own shared CMK (shared_kms_key.tf), looked
+# up by its fixed alias rather than threaded through as a repository
+# variable -- this root's own local-apply credentials already have
+# enough access for the lookup (same admin-equivalent identity that
+# applies this whole repo), and resolving it here bakes the real ARN
+# into whichever repo's IAM policy needs kms:DescribeKey below,
+# self-updating if the key ever gets recreated instead of needing a
+# manually-copied value kept in sync by hand.
+data "aws_kms_alias" "shared" {
+  name = "alias/shared"
+}
+
 locals {
   aws_region = "eu-central-1"
 
@@ -269,6 +281,29 @@ locals {
           ]
           Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:group/acme-dns01-challenge"
         },
+        {
+          # Fixes trivy's AWS-0017 (log groups not KMS-encrypted) --
+          # kms:DescribeKey is what AWS actually requires of the caller
+          # to associate a CMK with a CloudWatch log group (the log
+          # group's own encryption at rest is otherwise handled
+          # transparently by the CloudWatch Logs service, per the key's
+          # own policy in shared_kms_key.tf -- this grant is only about
+          # letting this role *reference* the key, not encrypt/decrypt
+          # anything itself). kms:ListAliases doesn't support
+          # resource-level scoping at all (AWS requires Resource "*"),
+          # needed for dyndns's own data "aws_kms_alias" lookup to
+          # resolve the same way this file's own lookup above does.
+          Sid      = "ReadSharedKmsKey"
+          Effect   = "Allow"
+          Action   = ["kms:DescribeKey"]
+          Resource = data.aws_kms_alias.shared.target_key_arn
+        },
+        {
+          Sid      = "ListKmsAliases"
+          Effect   = "Allow"
+          Action   = "kms:ListAliases"
+          Resource = "*"
+        },
       ]
 
       plan_policy_statements = [
@@ -349,6 +384,18 @@ locals {
             "iam:ListGroupPolicies",
           ]
           Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:group/acme-dns01-challenge"
+        },
+        {
+          Sid      = "ReadSharedKmsKey"
+          Effect   = "Allow"
+          Action   = ["kms:DescribeKey"]
+          Resource = data.aws_kms_alias.shared.target_key_arn
+        },
+        {
+          Sid      = "ListKmsAliases"
+          Effect   = "Allow"
+          Action   = "kms:ListAliases"
+          Resource = "*"
         },
       ]
     }
