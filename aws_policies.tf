@@ -714,6 +714,42 @@ locals {
             "arn:aws:sns:us-east-1:${data.aws_caller_identity.current.account_id}:homeserver-health-alerts:*",
           ]
         },
+        {
+          # Fixes trivy's AWS-0095/AWS-0136 -- this repo's own dedicated
+          # CMK for its SNS topic (can't use the shared account-wide key,
+          # different region). CreateKey needs Resource "*" -- same
+          # reasoning as RequestCertificate above, the key ID doesn't
+          # exist until the call succeeds. The rest scoped to a wildcard
+          # key/alias ARN in this region, same "ID not known in advance"
+          # pattern ManageCertificate below already uses for ACM.
+          Sid      = "CreateKmsKey"
+          Effect   = "Allow"
+          Action   = "kms:CreateKey"
+          Resource = "*"
+        },
+        {
+          Sid    = "ManageKmsKey"
+          Effect = "Allow"
+          Action = [
+            "kms:DescribeKey",
+            "kms:PutKeyPolicy",
+            "kms:GetKeyPolicy",
+            "kms:GetKeyRotationStatus",
+            "kms:EnableKeyRotation",
+            "kms:DisableKeyRotation",
+            "kms:TagResource",
+            "kms:UntagResource",
+            "kms:ListResourceTags",
+            "kms:ScheduleKeyDeletion",
+            "kms:CreateAlias",
+            "kms:DeleteAlias",
+            "kms:UpdateAlias",
+          ]
+          Resource = [
+            "arn:aws:kms:us-east-1:${data.aws_caller_identity.current.account_id}:key/*",
+            "arn:aws:kms:us-east-1:${data.aws_caller_identity.current.account_id}:alias/homeserver-health-check",
+          ]
+        },
       ]
 
       plan_policy_statements = [
@@ -748,6 +784,20 @@ locals {
           Resource = [
             "arn:aws:sns:us-east-1:${data.aws_caller_identity.current.account_id}:homeserver-health-alerts",
             "arn:aws:sns:us-east-1:${data.aws_caller_identity.current.account_id}:homeserver-health-alerts:*",
+          ]
+        },
+        {
+          Sid    = "ReadKmsKey"
+          Effect = "Allow"
+          Action = [
+            "kms:DescribeKey",
+            "kms:GetKeyPolicy",
+            "kms:GetKeyRotationStatus",
+            "kms:ListResourceTags",
+          ]
+          Resource = [
+            "arn:aws:kms:us-east-1:${data.aws_caller_identity.current.account_id}:key/*",
+            "arn:aws:kms:us-east-1:${data.aws_caller_identity.current.account_id}:alias/homeserver-health-check",
           ]
         },
       ]
