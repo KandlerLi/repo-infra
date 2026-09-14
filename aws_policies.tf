@@ -409,13 +409,48 @@ locals {
           # ManageDynDnsSecret above. Covers bucket lifecycle (create/tag/
           # policy/public-access-block/ownership-controls) plus the object
           # reads/writes the deploy step's `aws s3 sync` needs.
+          #
+          # Temporarily includes both the old (www.jkandler.de) and new
+          # (jkandler-website) bucket ARNs -- fixes trivy's AWS-0320 (bucket
+          # name not DNS-compliant) by renaming the bucket, which Terraform
+          # can only do as destroy-old + create-new, never in place. This
+          # role needs delete access to the old ARN in the very same apply
+          # that creates the new one. Remove the www.jkandler.de lines once
+          # that apply is confirmed done and the old bucket no longer
+          # exists.
           Sid    = "ManageSiteBucket"
           Effect = "Allow"
           Action = "s3:*"
           Resource = [
+            "arn:aws:s3:::jkandler-website",
+            "arn:aws:s3:::jkandler-website/*",
             "arn:aws:s3:::www.jkandler.de",
             "arn:aws:s3:::www.jkandler.de/*",
           ]
+        },
+        {
+          # Fixes trivy's AWS-0132 (bucket should use a CMK) -- the
+          # deploy step's own `aws s3 sync` PutObject calls need
+          # kms:GenerateDataKey* against the shared key once the bucket's
+          # default encryption switches to it; kms:DescribeKey is what
+          # AWS requires just to reference the key from Terraform's own
+          # bucket encryption config. See terraform-state#6 for
+          # CloudFront's own separate key-policy grant -- this is about
+          # this role's own access, not CloudFront's.
+          Sid      = "UseSharedKmsKeyForSiteBucket"
+          Effect   = "Allow"
+          Action   = ["kms:GenerateDataKey*", "kms:Decrypt", "kms:DescribeKey"]
+          Resource = data.aws_kms_alias.shared.target_key_arn
+        },
+        {
+          # website's own Terraform resolves the same alias/shared
+          # lookup this file's own data source does (to set kms_key_id
+          # on aws_s3_bucket_server_side_encryption_configuration) --
+          # kms:ListAliases doesn't support resource-level scoping.
+          Sid      = "ListKmsAliasesForSiteBucket"
+          Effect   = "Allow"
+          Action   = "kms:ListAliases"
+          Resource = "*"
         },
         {
           # CloudFront does not support resource-level permissions for
@@ -498,6 +533,11 @@ locals {
           # standard read set up front avoids further one-at-a-time
           # apply/replan cycles; it's still read-only and scoped to exactly
           # this one bucket ARN.
+          #
+          # Temporarily also lists the old www.jkandler.de ARN, same
+          # reasoning as ManageSiteBucket above: a plan against the bucket
+          # rename needs to refresh the still-live old bucket's state to
+          # compute an accurate diff. Remove once that apply is done.
           Sid    = "ReadSiteBucket"
           Effect = "Allow"
           Action = [
@@ -519,7 +559,19 @@ locals {
             "s3:GetReplicationConfiguration",
             "s3:ListBucket",
           ]
-          Resource = "arn:aws:s3:::www.jkandler.de"
+          Resource = ["arn:aws:s3:::jkandler-website", "arn:aws:s3:::www.jkandler.de"]
+        },
+        {
+          Sid      = "DescribeSharedKmsKeyForSiteBucket"
+          Effect   = "Allow"
+          Action   = "kms:DescribeKey"
+          Resource = data.aws_kms_alias.shared.target_key_arn
+        },
+        {
+          Sid      = "ListKmsAliasesForSiteBucket"
+          Effect   = "Allow"
+          Action   = "kms:ListAliases"
+          Resource = "*"
         },
         {
           Sid    = "ReadCloudFront"
