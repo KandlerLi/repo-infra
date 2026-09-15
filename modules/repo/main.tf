@@ -148,6 +148,12 @@ resource "github_actions_repository_permissions" "this" {
       "KandlerLi/gha-common/.github/workflows/terraform-checks.yml@*",
       "KandlerLi/gha-common/.github/workflows/terraform-apply.yml@*",
       "KandlerLi/gha-common/.github/workflows/trivy-config.yml@*",
+      # trivy-image.yml -- a distinct workflow file from trivy-config.yml
+      # above, so it needs its own explicit entry despite living in the
+      # same gha-common repo (this allowlist matches by exact path, not
+      # by owning repository -- learned the hard way during the
+      # trivy-config rollout, see the comments below).
+      "KandlerLi/gha-common/.github/workflows/trivy-image.yml@*",
       # trivy-config.yml's own action, not just the reusable workflow that
       # calls it -- found live (2026-09-13) against dyndns: this allowlist
       # governs every action a repo's workflows transitively run, not only
