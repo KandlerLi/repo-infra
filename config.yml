@@ -185,14 +185,26 @@ terraform-state:
 # (modules/github_runner) plus the cluster-scoped PersistentVolumes a
 # namespaced Role could never be scoped to by name (see k3s-apps' own
 # split, 2026-09-03). Same category as repo-infra/terraform-state
-# above: rare, admin-privileged, applied only locally by a human, never
-# CI -- it's the thing k3s-apps' own CI runs on. Originally a second
-# Terraform root nested inside the k3s-apps repo itself; extracted into
-# its own repo here to actually live alongside its real siblings
-# instead of inside the repo it grants access to.
+# above -- rare, admin-privileged, applied only locally by a human,
+# never CI (that part is unaffected by the change below -- it's about
+# GitHub-side gating, not about who runs terraform apply). Originally a
+# second Terraform root nested inside the k3s-apps repo itself;
+# extracted into its own repo here to actually live alongside its real
+# siblings instead of inside the repo it grants access to.
+#
+# Made public with standard branch protection 2026-09-15, same
+# treatment and reasoning as terraform-state/repo-infra above: no
+# credential lives in this repo (the GitHub runner's own PAT is read
+# from AWS Secrets Manager, not hardcoded), and its RBAC design
+# (dashboard_rbac.tf, main.tf's k3s_apps_ci Role) was already built
+# least-privilege enough to hold up under scrutiny -- e.g. the
+# Kubernetes Dashboard's own ServiceAccount is deliberately bound to
+# the built-in "view" ClusterRole, not the cluster-admin the official
+# manifest defaults to. Confirmed clean (0 findings) before adding the
+# required check.
 k3s-bootstrap:
-  visibility: private
-  branch_protection_enabled: false
+  required_status_check_contexts:
+    - "trivy-config / Trivy config scan"
 
 # The AWS Secrets Manager secret *containers*, migrated one at a time out
 # of terraform-state (secrets_manager.tf) so the secrets concern is
