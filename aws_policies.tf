@@ -177,6 +177,19 @@ locals {
             "logs:PutRetentionPolicy",
             "logs:TagResource",
             "logs:UntagResource",
+            # Setting kms_key_id on an *existing* aws_cloudwatch_log_group
+            # calls this AWS API directly -- distinct from anything above,
+            # and distinct from the kms:* grants below (those cover using
+            # the key itself, not associating/disassociating it with a log
+            # group). Found live 2026-09-15: this grant was missing since
+            # dyndns#31 first set kms_key_id on both log groups below
+            # (2026-09-14), and that apply had actually been failing with
+            # AccessDeniedException the whole time -- PARKED.md incorrectly
+            # recorded it as "applied, confirmed clean" based on the trivy
+            # scan (which reads the .tf source, not live AWS state) rather
+            # than checking the apply job's own result.
+            "logs:AssociateKmsKey",
+            "logs:DisassociateKmsKey",
           ]
           Resource = [
             "arn:aws:logs:${local.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/dyndns-route53-updater",
