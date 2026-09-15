@@ -154,6 +154,13 @@ resource "github_actions_repository_permissions" "this" {
       # by owning repository -- learned the hard way during the
       # trivy-config rollout, see the comments below).
       "KandlerLi/gha-common/.github/workflows/trivy-image.yml@*",
+      # gitleaks.yml -- same reasoning as trivy-image.yml above. Unlike
+      # trivy-config.yml/trivy-image.yml, this one calls no third-party
+      # action at all beyond actions/checkout (already allowed below) --
+      # the gitleaks binary itself is downloaded and checksum-verified
+      # directly, so there's no nested-action allowlist chain to add
+      # here this time.
+      "KandlerLi/gha-common/.github/workflows/gitleaks.yml@*",
       # trivy-config.yml's own action, not just the reusable workflow that
       # calls it -- found live (2026-09-13) against dyndns: this allowlist
       # governs every action a repo's workflows transitively run, not only
