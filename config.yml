@@ -133,14 +133,29 @@ home-infra:
 # single-owner git history backups, not collaboratively-protected release
 # repos: mandatory signed-commit PRs (repo-infra's normal baseline) would
 # only make routine backup pushes painful here, for zero actual benefit
-# (nothing runs CI against them, nobody else pushes to them). terraform-state
-# is the exception below -- it grew a real CI check (trivy config) and
-# standard branch protection once it had findings worth actually gating
-# merges on, same reasoning as home-infra's own move above.
-
+# (nothing runs CI against them, nobody else pushes to them). repo-infra
+# and terraform-state are the exceptions below -- both grew a real CI
+# check (trivy config) and standard branch protection once they had
+# findings worth actually gating merges on (or, for repo-infra, once it
+# was confirmed already clean), same reasoning as home-infra's own move
+# above. (repo-infra itself isn't really a passive backup mirror the way
+# this heading describes -- it's the actively-applied identity control
+# plane -- but it shared this grouping's other two settings until now.)
+#
+# Made public 2026-09-15, same tradeoff as terraform-state's own
+# identical move: GitHub's classic branch protection API requires a paid
+# plan for private repos, and this repo -- the account-wide AWS/GitHub
+# OIDC identity control plane -- is at least as sensitive as
+# terraform-state. Judged acceptable for the same reason: no credential
+# ever lives in this repo (access keys stay in pass/PGP-encrypted or
+# human-only), and this repo's own self-escalation design was built to
+# hold up under scrutiny, not to depend on the policy shape staying
+# secret.
 repo-infra:
-  visibility: private
-  branch_protection_enabled: false
+  # trivy-config added 2026-09-15 -- confirmed clean (0 findings)
+  # already, nothing to fix first.
+  required_status_check_contexts:
+    - "trivy-config / Trivy config scan"
 
 # Standard branch protection enabled 2026-09-14, same block every public
 # repo gets (required PR + signed commits + linear history + the named
