@@ -546,6 +546,7 @@ locals {
           Action = [
             "cloudfront:CreateFunction",
             "cloudfront:DescribeFunction",
+            "cloudfront:GetFunction",
             "cloudfront:UpdateFunction",
             "cloudfront:PublishFunction",
             "cloudfront:DeleteFunction",
