@@ -523,6 +523,36 @@ locals {
           Resource = "*"
         },
         {
+          # Confirmed live 2026-09-17: aws_cloudfront_function.url_rewrite
+          # (main.tf, publish = true) failed AccessDenied on
+          # cloudfront:CreateFunction -- CloudFront Functions are a
+          # genuinely separate action namespace from the
+          # distribution/OAC lifecycle ManageCloudFront above already
+          # covers, never granted before since this repo never had a
+          # Function resource until now. Unlike distributions,
+          # CloudFront Functions *do* support resource-level ARNs (the
+          # AccessDenied error itself names
+          # arn:...:function/www-jkandler-de-url-rewrite) -- scoped to
+          # the function/* resource type rather than ManageCloudFront's
+          # own Resource = "*", matching this file's own general
+          # "scope as tightly as the API actually allows" convention.
+          # PublishFunction included alongside Create/Describe/Update/
+          # Delete since this resource sets publish = true, moving it
+          # from DEVELOPMENT to LIVE stage -- a distinct action Terraform
+          # calls as part of the same apply, not implied by CreateFunction
+          # alone.
+          Sid    = "ManageCloudFrontFunctions"
+          Effect = "Allow"
+          Action = [
+            "cloudfront:CreateFunction",
+            "cloudfront:DescribeFunction",
+            "cloudfront:UpdateFunction",
+            "cloudfront:PublishFunction",
+            "cloudfront:DeleteFunction",
+          ]
+          Resource = "arn:aws:cloudfront::${data.aws_caller_identity.current.account_id}:function/*"
+        },
+        {
           Sid    = "ManageCloudFrontInvalidations"
           Effect = "Allow"
           Action = [
