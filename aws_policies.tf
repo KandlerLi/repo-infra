@@ -87,29 +87,38 @@ locals {
   # aws/secrets-manager's own CI role, added 2026-09-13 once this
   # root's real risk profile turned out not to match terraform-state/
   # k3s-bootstrap's (see that repo's own README): it never touches IAM,
-  # only ever creates empty aws_secretsmanager_secret *containers* under
-  # the three name prefixes it already manages -- never GetSecretValue,
-  # PutSecretValue, or DeleteSecret, none of which this repo's Terraform
-  # ever calls. CreateSecret is the one real write permission, scoped
-  # to exactly these prefixes so a compromised run can create a bogus
-  # empty container at worst, never touch an actual secret value or
-  # anywhere outside them. Identical for plan and apply -- a speculative
-  # plan never actually creates anything regardless of what it's allowed
-  # to, and a plan still needs the same read actions apply does to
-  # refresh state. DescribeSecret alone wasn't enough -- found live on
-  # this PR's own first real plan run: the AWS provider's
-  # aws_secretsmanager_secret read also calls GetResourcePolicy on every
-  # refresh (checking for a resource-based policy, whether or not one
-  # exists), a separate IAM action neither this repo's own Terraform nor
-  # DescribeSecret's own name would suggest -- same category of gap
-  # ADR 0018 already anticipated (SNS/Budgets hit the same "the real API
-  # surface needs more than the obviously-named action" pattern before).
+  # only ever creates or updates empty aws_secretsmanager_secret
+  # *containers* under the three name prefixes it already manages --
+  # never GetSecretValue, PutSecretValue, or DeleteSecret, none of
+  # which this repo's Terraform ever calls. CreateSecret/UpdateSecret
+  # are the only real write permissions, scoped to exactly these
+  # prefixes so a compromised run can create a bogus empty container or
+  # rewrite one's own description/recovery window at worst, never touch
+  # an actual secret value or anywhere outside them. Identical for plan
+  # and apply -- a speculative plan never actually creates or updates
+  # anything regardless of what it's allowed to, and a plan still needs
+  # the same read actions apply does to refresh state. DescribeSecret
+  # alone wasn't enough -- found live on this PR's own first real plan
+  # run: the AWS provider's aws_secretsmanager_secret read also calls
+  # GetResourcePolicy on every refresh (checking for a resource-based
+  # policy, whether or not one exists), a separate IAM action neither
+  # this repo's own Terraform nor DescribeSecret's own name would
+  # suggest -- same category of gap ADR 0018 already anticipated
+  # (SNS/Budgets hit the same "the real API surface needs more than the
+  # obviously-named action" pattern before). UpdateSecret specifically
+  # was missing the same way: this repo's Terraform had only ever
+  # *created* containers until a later PR edited two existing
+  # descriptions, and CreateSecret alone doesn't cover updating an
+  # already-existing resource -- confirmed live, that apply failed with
+  # AccessDeniedException on secretsmanager:UpdateSecret before this
+  # was added.
   secrets_manager_statements = [
     {
       Sid    = "ManageSecretContainers"
       Effect = "Allow"
       Action = [
         "secretsmanager:CreateSecret",
+        "secretsmanager:UpdateSecret",
         "secretsmanager:DescribeSecret",
         "secretsmanager:GetResourcePolicy",
       ]
