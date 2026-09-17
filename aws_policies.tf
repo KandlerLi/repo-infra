@@ -121,6 +121,27 @@ locals {
     },
   ]
 
+  # For the scheduled rotation-reminder workflow (check-secret-rotation.yml,
+  # BACKLOG.md's "Manually-rotated Secrets Manager secrets have no
+  # rotation reminder") -- same shape as k3s_apps_blocky_rotation_statement
+  # above: a scheduled job's own extra permission, apply-only, added as
+  # its own narrow statement rather than folded into the broad read/
+  # manage list, so a compromised token can only ever send mail as the
+  # one already-verified identity, nothing else. jkandler.de is
+  # aws/ses-relay's own verified SES domain identity (that repo's own
+  # outputs.tf) -- hand-built ARN, not a live Terraform reference, same
+  # "different repo's own resource" reasoning
+  # k3s_apps_secretsmanager_read_statements' own comment already gives
+  # for aws/secrets-manager's ARNs.
+  secrets_manager_rotation_check_statement = [
+    {
+      Sid      = "SendRotationReminderEmail"
+      Effect   = "Allow"
+      Action   = "ses:SendEmail"
+      Resource = "arn:aws:ses:${local.aws_region}:${data.aws_caller_identity.current.account_id}:identity/jkandler.de"
+    },
+  ]
+
   aws_policies = {
     # k3s-apps manages zero real AWS resources of its own -- this
     # entry's own baseline exists purely so its CI can read/write its
@@ -974,9 +995,12 @@ locals {
     }
 
     secrets-manager = {
-      state_key               = "secrets-manager/terraform.tfstate"
-      apply_policy_statements = local.secrets_manager_statements
-      plan_policy_statements  = local.secrets_manager_statements
+      state_key = "secrets-manager/terraform.tfstate"
+      apply_policy_statements = concat(
+        local.secrets_manager_statements,
+        local.secrets_manager_rotation_check_statement,
+      )
+      plan_policy_statements = local.secrets_manager_statements
     }
   }
 }
