@@ -664,6 +664,26 @@ locals {
           Resource = "*"
         },
         {
+          # Confirmed live 2026-09-17 (PR #17's own plan job): missing
+          # from this plan-only role even after apply's own
+          # ManageCloudFrontFunctions statement above was added (#27/#28)
+          # -- that only covers the apply_policy_statements' separate
+          # role (website-github-actions), not this one
+          # (website-github-plan). `terraform plan` refreshes
+          # aws_cloudfront_function.url_rewrite's state via
+          # DescribeFunction (metadata) and GetFunction (code/stage),
+          # same two read actions the apply role already needed for its
+          # own refresh step. Read-only subset of ManageCloudFrontFunctions
+          # above, same resource-scoped ARN.
+          Sid    = "ReadCloudFrontFunctions"
+          Effect = "Allow"
+          Action = [
+            "cloudfront:DescribeFunction",
+            "cloudfront:GetFunction",
+          ]
+          Resource = "arn:aws:cloudfront::${data.aws_caller_identity.current.account_id}:function/*"
+        },
+        {
           Sid    = "ReadCertificate"
           Effect = "Allow"
           Action = [
