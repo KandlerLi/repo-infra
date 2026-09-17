@@ -135,19 +135,25 @@ locals {
   # rotation reminder") -- same shape as k3s_apps_blocky_rotation_statement
   # above: a scheduled job's own extra permission, apply-only, added as
   # its own narrow statement rather than folded into the broad read/
-  # manage list, so a compromised token can only ever send mail as the
-  # one already-verified identity, nothing else. jkandler.de is
-  # aws/ses-relay's own verified SES domain identity (that repo's own
-  # outputs.tf) -- hand-built ARN, not a live Terraform reference, same
-  # "different repo's own resource" reasoning
-  # k3s_apps_secretsmanager_read_statements' own comment already gives
-  # for aws/secrets-manager's ARNs.
+  # manage list. Resource is a wildcard, not scoped to jkandler.de (aws/
+  # ses-relay's own verified SES domain identity) alone -- confirmed
+  # live 2026-09-17 this has to be: AWS's own ses:SendEmail IAM
+  # authorization checks the caller's policy against an identity ARN
+  # constructed from the *destination* address too, not just the
+  # sender's, and the real recipient here (julian.kandler@outlook.com)
+  # is an external address this account will never own or verify, so
+  # there's no specific destination ARN to enumerate in advance the way
+  # the sender's own identity/jkandler.de could be. Action stays scoped
+  # to exactly ses:SendEmail (no ses:*), so a compromised token can
+  # still only ever send mail through this account's own SES sending
+  # limits, never touch identity verification, configuration sets, or
+  # anything else SES exposes.
   secrets_manager_rotation_check_statement = [
     {
       Sid      = "SendRotationReminderEmail"
       Effect   = "Allow"
       Action   = "ses:SendEmail"
-      Resource = "arn:aws:ses:${local.aws_region}:${data.aws_caller_identity.current.account_id}:identity/jkandler.de"
+      Resource = "arn:aws:ses:${local.aws_region}:${data.aws_caller_identity.current.account_id}:identity/*"
     },
   ]
 
