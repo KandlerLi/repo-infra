@@ -63,6 +63,10 @@ locals {
         "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/blocky-*",
         "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/sankey-export-*",
         "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/ghcr-pull-token-*",
+        # k3s-apps/bulwark: a genuinely new secret, not a migration --
+        # Bulwark webmail's own Authelia OIDC client secret (plaintext
+        # half; home-infra/authelia holds the matching hash).
+        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/bulwark-*",
       ]
     },
   ]
