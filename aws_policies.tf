@@ -67,6 +67,9 @@ locals {
         # Bulwark webmail's own Authelia OIDC client secret (plaintext
         # half; home-infra/authelia holds the matching hash).
         "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/bulwark-*",
+        # k3s-apps/stalwart: the Stalwart management-API token the
+        # Stalwart Terraform provider authenticates with.
+        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/stalwart-*",
       ]
     },
   ]
