@@ -178,7 +178,15 @@ resource "github_actions_repository_permissions" "this" {
       # by owning repository. setup-trivy calls these
       # two specifically, never the bare actions/cache.
       "actions/cache/restore@*",
-      "actions/cache/save@*"
+      "actions/cache/save@*",
+      # Used by both gha-common's terraform-checks.yml own "Post plan to
+      # pull request" step and k3s-apps' own duplicate of it (see that
+      # repo's own checks.yml) -- confirmed live: k3s-apps#87's Checks
+      # workflow ran to startup_failure with this action missing from
+      # the list, before running a single step (that repo's unrelated
+      # Security scan workflow, referencing none of these actions,
+      # triggered and ran normally on the same push).
+      "actions/github-script@*"
     ]
     verified_allowed = false
   }
