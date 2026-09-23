@@ -25,8 +25,6 @@ dyndns:
     - "terraform / Validate"
     - "terraform / Terraform plan"
     - "trivy-config / Trivy config scan"
-  action_variables:
-    ROUTE53_ZONE_ID: Z07879811I86VC8PAL8HX
 
 # Static CV/personal site at www.jkandler.de (S3 + CloudFront + ACM).
 # Originally GitHub-hosted specifically to keep the deploy pipeline
@@ -43,8 +41,6 @@ website:
     - "terraform / Validate"
     - "terraform / Terraform plan"
     - "trivy-config / Trivy config scan"
-  action_variables:
-    ROUTE53_ZONE_ID: Z07879811I86VC8PAL8HX
 
 # $10/month AWS Budget alert. Self-hosted runner, same as everything else
 # now -- this repo's own apply.yml runs terraform apply directly, no
@@ -61,8 +57,6 @@ aws-budget:
     - "terraform / Validate"
     - "terraform / Terraform plan"
     - "trivy-config / Trivy config scan"
-  action_variables:
-    ALERT_EMAIL: julian.kandler@outlook.com
 
 # External reachability check for the homeserver (Route53 health check +
 # CloudWatch alarm + SNS email), deliberately the only monitoring piece
@@ -77,8 +71,6 @@ homeserver-health-check:
     - "terraform / Validate"
     - "terraform / Terraform plan"
     - "trivy-config / Trivy config scan"
-  action_variables:
-    ALERT_EMAIL: julian.kandler@outlook.com
 
 # SES sending identity used only to relay homeserver monitoring alert
 # emails (Alertmanager, in home-infra's monitoring role) to
@@ -94,9 +86,6 @@ ses-relay:
     - "terraform / Validate"
     - "terraform / Terraform plan"
     - "trivy-config / Trivy config scan"
-  action_variables:
-    ALERT_EMAIL: julian.kandler@outlook.com
-    ROUTE53_ZONE_ID: Z07879811I86VC8PAL8HX
 
 # Started as a no-CI backup mirror like the ones below, but grew a real
 # checks.yml (ansible-playbook --syntax-check + the unit test suite) since
