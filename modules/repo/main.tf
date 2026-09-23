@@ -138,10 +138,10 @@ resource "github_actions_repository_permissions" "this" {
       "aws-actions/configure-aws-credentials@*",
       "hashicorp/setup-terraform@*",
       # Reusable workflows are governed by this same allowlist, not a
-      # separate mechanism -- found live (2026-09-03) when aws-budget's
-      # own checks.yml, migrated to call gha-common's terraform-checks.yml,
-      # failed at startup_failure before running a single step, because
-      # gha-common wasn't in this list. Every repo this module manages
+      # separate mechanism -- a caller's checks.yml migrated to call
+      # gha-common's terraform-checks.yml fails at startup_failure
+      # before running a single step if gha-common isn't in this list.
+      # Every repo this module manages
       # gets this uniformly, matching sha_pinning_required's own baseline
       # treatment, since gha-common's reusable workflows are meant to be
       # callable from any of them.
@@ -161,23 +161,21 @@ resource "github_actions_repository_permissions" "this" {
       # directly, so there's no nested-action allowlist chain to add
       # here this time.
       "KandlerLi/gha-common/.github/workflows/gitleaks.yml@*",
-      # trivy-config.yml's own action, not just the reusable workflow that
-      # calls it -- found live (2026-09-13) against dyndns: this allowlist
-      # governs every action a repo's workflows transitively run, not only
-      # the top-level reusable workflow reference. Same fix needed for
-      # every repo this module manages, since they all share this list.
+      # trivy-config.yml's own action, not just the reusable workflow
+      # that calls it -- this allowlist governs every action a repo's
+      # workflows transitively run, not only the top-level reusable
+      # workflow reference. Same fix needed for every repo this module
+      # manages, since they all share this list.
       "aquasecurity/trivy-action@*",
-      # trivy-action's own two nested actions -- found live (2026-09-13,
-      # same dyndns run, one layer deeper): allowing trivy-action itself
-      # wasn't enough, since it in turn calls these two to install the
-      # trivy binary and cache it.
+      # trivy-action's own two nested actions -- allowing trivy-action
+      # itself isn't enough, since it in turn calls these two to
+      # install the trivy binary and cache it.
       "aquasecurity/setup-trivy@*",
       "actions/cache@*",
-      # actions/cache@* alone doesn't cover these -- found live
-      # (2026-09-13, same dyndns run, one layer deeper still): GitHub
-      # matches each of a repo's separate action.yml entry points
-      # (cache, cache/restore, cache/save) as distinct action
-      # references, not by owning repository. setup-trivy calls these
+      # actions/cache@* alone doesn't cover these -- GitHub matches
+      # each of a repo's separate action.yml entry points (cache,
+      # cache/restore, cache/save) as distinct action references, not
+      # by owning repository. setup-trivy calls these
       # two specifically, never the bare actions/cache.
       "actions/cache/restore@*",
       "actions/cache/save@*"
