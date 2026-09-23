@@ -26,9 +26,8 @@ locals {
 
   # k3s-apps' own read access to the Secrets Manager groups its
   # Terraform reads directly (data "aws_secretsmanager_secret_version",
-  # k3s-apps' own secrets.tf) -- the SOPS-to-Secrets-Manager cutover,
-  # PARKED.md's own writeup. Deliberately identical for apply AND plan:
-  # unlike dyndns's own ManageDynDnsSecret/ReadDynDnsSecretMetadata
+  # k3s-apps' own secrets.tf). Deliberately identical for apply AND
+  # plan: unlike dyndns's own ManageDynDnsSecret/ReadDynDnsSecretMetadata
   # split (where the plan role never needs the real value, since that
   # secret is Lambda-runtime-only), these values flow directly into
   # Terraform's own jsondecode() locals, so even a plan needs
@@ -36,15 +35,11 @@ locals {
   # hand-built with a trailing "-*" wildcard for the random suffix
   # Secrets Manager appends, matching dyndns's own established
   # convention -- these are a different repo's own resources
-  # (aws/secrets-manager, moved there from bootstrap/ 2026-09-13 --
-  # see that repo's own README), so there's no real Terraform resource
+  # (aws/secrets-manager), so there's no real Terraform resource
   # reference to use here the way that repo's own operator.tf could.
-  # k3s-apps/ghcr-pull-token is a genuinely new secret (split out of
-  # home-infra/home-agent 2026-09-12), not a migration, but reads the
-  # same way. Excludes home-infra/nextcloud (Ansible-only,
-  # infra/home-infra never touches this repo) and
-  # home-infra/github-runner (bootstrap/k3s-bootstrap's own, not
-  # k3s-apps').
+  # Excludes home-infra/nextcloud (Ansible-only, infra/home-infra never
+  # touches this repo) and home-infra/github-runner
+  # (bootstrap/k3s-bootstrap's own, not k3s-apps').
   k3s_apps_secretsmanager_read_statements = [
     {
       Sid    = "ReadSecretsManagerSecrets"
@@ -224,13 +219,8 @@ locals {
             # calls this AWS API directly -- distinct from anything above,
             # and distinct from the kms:* grants below (those cover using
             # the key itself, not associating/disassociating it with a log
-            # group). Found live 2026-09-15: this grant was missing since
-            # dyndns#31 first set kms_key_id on both log groups below
-            # (2026-09-14), and that apply had actually been failing with
-            # AccessDeniedException the whole time -- PARKED.md incorrectly
-            # recorded it as "applied, confirmed clean" based on the trivy
-            # scan (which reads the .tf source, not live AWS state) rather
-            # than checking the apply job's own result.
+            # group). See docs/home-infra-ai-context's decisions.md for
+            # the AccessDeniedException this grant closes.
             "logs:AssociateKmsKey",
             "logs:DisassociateKmsKey",
           ]
@@ -530,8 +520,8 @@ locals {
           Resource = "*"
         },
         {
-          # Confirmed live 2026-09-17: aws_cloudfront_function.url_rewrite
-          # (main.tf, publish = true) failed AccessDenied on
+          # aws_cloudfront_function.url_rewrite (main.tf, publish =
+          # true) failed AccessDenied on
           # cloudfront:CreateFunction -- CloudFront Functions are a
           # genuinely separate action namespace from the
           # distribution/OAC lifecycle ManageCloudFront above already
@@ -671,10 +661,9 @@ locals {
           Resource = "*"
         },
         {
-          # Confirmed live 2026-09-17 (PR #17's own plan job): missing
-          # from this plan-only role even after apply's own
-          # ManageCloudFrontFunctions statement above was added (#27/#28)
-          # -- that only covers the apply_policy_statements' separate
+          # Missing from this plan-only role even after apply's own
+          # ManageCloudFrontFunctions statement above was added -- that
+          # only covers the apply_policy_statements' separate
           # role (website-github-actions), not this one
           # (website-github-plan). `terraform plan` refreshes
           # aws_cloudfront_function.url_rewrite's state via
@@ -858,9 +847,9 @@ locals {
           ]
         },
         {
-          # Found live 2026-09-14: the aws_kms_alias *resource* (not
-          # just a data source lookup, like dyndns/website's own gap)
-          # also needs this to refresh its own state during plan/apply
+          # The aws_kms_alias *resource* (not just a data source lookup,
+          # like dyndns/website's own gap) also needs this to refresh
+          # its own state during plan/apply
           # -- ManageKmsKey's CreateAlias/DeleteAlias/UpdateAlias above
           # weren't enough on their own. No resource-level scoping
           # possible for this action.

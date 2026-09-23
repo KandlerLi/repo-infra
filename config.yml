@@ -1,3 +1,9 @@
+# Every repo's own `trivy-config` required check (and the "made public
+# to get real branch protection" moves below) follow one rollout: see
+# docs/home-infra-docs/docs/adr/0022-trivy-config-scanning-and-public-repo-tradeoff.md
+# for what was actually fixed vs. suppressed per repo, and the full
+# public-repo tradeoff reasoning.
+
 # Shared CI Dockerfile + two workflow_call reusable workflows
 # (terraform-checks.yml, terraform-apply.yml) that dyndns/website/
 # aws-budget/homeserver-health-check/ses-relay all call instead of each
@@ -15,10 +21,6 @@ gha-common: {}
 # prefix.
 dyndns:
   runner: true
-  # trivy-config added 2026-09-14 once this repo's own findings were
-  # actually fixed (PARKED.md's "Security audit" entry) rather than
-  # left open -- confirmed clean on main first, same discipline as
-  # terraform-state's own required-check addition.
   required_status_check_contexts:
     - "terraform / Validate"
     - "terraform / Terraform plan"
@@ -37,10 +39,6 @@ dyndns:
 # prefix.
 website:
   runner: true
-  # trivy-config added 2026-09-14 once this repo's own findings were
-  # actually fixed (PARKED.md's "Security audit" entry, including the
-  # bucket-rename incident that entry documents in full) rather than
-  # left open.
   required_status_check_contexts:
     - "terraform / Validate"
     - "terraform / Terraform plan"
@@ -59,8 +57,6 @@ website:
 # on the un-prefixed names below that no run will ever report again.
 aws-budget:
   runner: true
-  # trivy-config added 2026-09-14 -- this repo was already confirmed
-  # clean on its very first run (0 findings), nothing to fix.
   required_status_check_contexts:
     - "terraform / Validate"
     - "terraform / Terraform plan"
@@ -77,10 +73,6 @@ aws-budget:
 # these need the "terraform / " prefix.
 homeserver-health-check:
   runner: true
-  # trivy-config added 2026-09-14 once this repo's own findings were
-  # actually fixed (PARKED.md's "Security audit" entry -- a dedicated
-  # us-east-1 KMS key for its SNS topic, since the shared workspace key
-  # can't cross regions).
   required_status_check_contexts:
     - "terraform / Validate"
     - "terraform / Terraform plan"
@@ -98,9 +90,6 @@ homeserver-health-check:
 # prefix.
 ses-relay:
   runner: true
-  # trivy-config added 2026-09-14 once this repo's own findings were
-  # actually fixed (PARKED.md's "Security audit" entry -- ses-relay-smtp's
-  # policy moved to an IAM group).
   required_status_check_contexts:
     - "terraform / Validate"
     - "terraform / Terraform plan"
@@ -134,49 +123,12 @@ home-infra:
 # repos: mandatory signed-commit PRs (repo-infra's normal baseline) would
 # only make routine backup pushes painful here, for zero actual benefit
 # (nothing runs CI against them, nobody else pushes to them). repo-infra
-# and terraform-state are the exceptions below -- both grew a real CI
-# check (trivy config) and standard branch protection once they had
-# findings worth actually gating merges on (or, for repo-infra, once it
-# was confirmed already clean), same reasoning as home-infra's own move
-# above. (repo-infra itself isn't really a passive backup mirror the way
-# this heading describes -- it's the actively-applied identity control
-# plane -- but it shared this grouping's other two settings until now.)
-#
-# Made public 2026-09-15, same tradeoff as terraform-state's own
-# identical move: GitHub's classic branch protection API requires a paid
-# plan for private repos, and this repo -- the account-wide AWS/GitHub
-# OIDC identity control plane -- is at least as sensitive as
-# terraform-state. Judged acceptable for the same reason: no credential
-# ever lives in this repo (access keys stay in pass/PGP-encrypted or
-# human-only), and this repo's own self-escalation design was built to
-# hold up under scrutiny, not to depend on the policy shape staying
-# secret.
+# and terraform-state are the exceptions below -- both public, with real
+# CI and standard branch protection -- see ADR 0022 (top of this file).
 repo-infra:
-  # trivy-config added 2026-09-15 -- confirmed clean (0 findings)
-  # already, nothing to fix first.
   required_status_check_contexts:
     - "trivy-config / Trivy config scan"
 
-# Standard branch protection enabled 2026-09-14, same block every public
-# repo gets (required PR + signed commits + linear history + the named
-# status check, 0 required approvals since single-maintainer) -- once this
-# repo's own trivy findings were actually triaged/fixed rather than left
-# open, so the required check means something instead of blocking every
-# future PR unconditionally. See PARKED.md's "Security audit" entry for
-# what got fixed vs. deliberately suppressed with a documented reason.
-#
-# Made public the same day, deliberately: GitHub's classic branch
-# protection API requires a paid plan for private repositories (found
-# live -- github_repository_environment.production applied fine,
-# github_branch_protection then failed with "Upgrade to GitHub Pro or
-# make this repository public"). A real tradeoff weighed explicitly, not
-# a default -- this repo is the account's own IAM operator identity,
-# KMS key, and CloudTrail config, so publishing it does expose the exact
-# permission-boundary structure. Judged acceptable because none of that
-# is a credential (every access key stays in `pass`/PGP-encrypted or
-# human-only, never in git) and the self-escalation design this repo's
-# own comments already document was built to hold up under scrutiny, not
-# to depend on the policy shape staying secret.
 terraform-state:
   required_status_check_contexts:
     - "trivy-config / Trivy config scan"
@@ -186,22 +138,11 @@ terraform-state:
 # namespaced Role could never be scoped to by name (see k3s-apps' own
 # split, 2026-09-03). Same category as repo-infra/terraform-state
 # above -- rare, admin-privileged, applied only locally by a human,
-# never CI (that part is unaffected by the change below -- it's about
-# GitHub-side gating, not about who runs terraform apply). Originally a
-# second Terraform root nested inside the k3s-apps repo itself;
-# extracted into its own repo here to actually live alongside its real
-# siblings instead of inside the repo it grants access to.
-#
-# Made public with standard branch protection 2026-09-15, same
-# treatment and reasoning as terraform-state/repo-infra above: no
-# credential lives in this repo (the GitHub runner's own PAT is read
-# from AWS Secrets Manager, not hardcoded), and its RBAC design
-# (dashboard_rbac.tf, main.tf's k3s_apps_ci Role) was already built
-# least-privilege enough to hold up under scrutiny -- e.g. the
-# Kubernetes Dashboard's own ServiceAccount is deliberately bound to
-# the built-in "view" ClusterRole, not the cluster-admin the official
-# manifest defaults to. Confirmed clean (0 findings) before adding the
-# required check.
+# never CI. Originally a second Terraform root nested inside the
+# k3s-apps repo itself; extracted into its own repo here to actually
+# live alongside its real siblings instead of inside the repo it
+# grants access to. Public, same tradeoff as terraform-state/repo-infra
+# -- see ADR 0022.
 k3s-bootstrap:
   required_status_check_contexts:
     - "trivy-config / Trivy config scan"
@@ -219,23 +160,12 @@ k3s-bootstrap:
 # 2026-09-13 via its own dedicated OIDC role (aws_policies.tf), scoped to
 # exactly CreateSecret/DescribeSecret on the name prefixes it already
 # manages -- a compromised run can create a bogus empty container at
-# worst, never read or write an actual secret value.
-#
-# Public, deliberately, same reasoning and precedent as k3s-apps: classic
-# branch protection rules need a paid plan for private repositories on
-# GitHub (confirmed live 2026-09-13 -- github_branch_protection failed
-# outright with "Upgrade to GitHub Pro or make this repository public").
-# No real secret material ever touches this repo's git history either
-# way (every aws_secretsmanager_secret resource is container-only) --
-# only secret names/descriptions become publicly visible that weren't
-# before, e.g. "Blocky's own Postgres query-log password".
+# worst, never read or write an actual secret value. Public -- see ADR
+# 0022 for why, and for the AWS-0098 suppression this repo's own
+# README.md documents.
 secrets-manager:
   visibility: public
   runner: true
-  # trivy-config added 2026-09-14 once this repo's own findings were
-  # actually fixed -- all 12 AWS-0098s suppressed with a documented
-  # reason (PARKED.md's "Security audit" entry / this repo's own
-  # README.md).
   required_status_check_contexts:
     - "terraform / Validate"
     - "terraform / Terraform plan"
@@ -250,27 +180,18 @@ home-infra-ai-context:
   branch_protection_enabled: false
 
 # The k3s cluster's own app workloads (Blocky, ingress, Grafana,
-# home-agent, deluge, open-webui, landing-page, alertmanager) -- CI-
-# applied (2026-09-03) via a narrowly-scoped in-cluster ServiceAccount
-# (bootstrap/ in that repo, applied locally, owns the RBAC and the
-# runner itself), gated on the production environment's reviewer
-# approval before a real apply runs, same pattern as the AWS repos
-# above. Public, deliberately, not the private visibility this repo
-# had until now: GitHub's environment-reviewer protection needs a paid
-# plan for private repositories, and real secret material never
-# touches this repo's git history either way (SOPS-sourced, synced in
-# via action_secrets below, landing only in GitHub Secrets) -- only
-# its .tf files, which do describe real internal LAN topology (IPs,
-# NFS paths, node names), become publicly visible that weren't before.
+# home-agent, deluge, open-webui, landing-page, alertmanager) -- CI
+# applies this root on every merge to main, via a narrowly-scoped
+# in-cluster ServiceAccount (bootstrap/ in that repo, applied locally,
+# owns the RBAC and the runner itself); the PR review is the only gate.
+# Public -- see ADR 0022 for why, and for the k3s-apps#52 fix this
+# repo's own trivy-config check gates on.
 k3s-apps:
   visibility: public
   runner: true
-  # trivy-config added 2026-09-14 once this repo's own findings were
-  # actually fixed (PARKED.md's "Security audit" entry -- k3s-apps#52,
-  # containers/sankey-export/Dockerfile's DS-0002/DS-0026). Named
-  # "trivy-config / Trivy config scan" like every other repo's, not
-  # un-prefixed like this repo's own Validate/Terraform plan above --
-  # the prefix comes from security-scan.yml calling gha-common's
+  # Named "trivy-config / Trivy config scan" like every other repo's,
+  # not un-prefixed like this repo's own Validate/Terraform plan above
+  # -- the prefix comes from security-scan.yml calling gha-common's
   # reusable workflow, regardless of how this repo's own inline
   # checks.yml happens to name its contexts.
   required_status_check_contexts:
