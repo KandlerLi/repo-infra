@@ -65,6 +65,9 @@ locals {
         # k3s-apps/stalwart: the Stalwart management-API token the
         # Stalwart Terraform provider authenticates with.
         "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/stalwart-*",
+        # k3s-apps/paperless: Paperless-ngx's own Authelia OIDC client
+        # secret (ADR 0023; plaintext half, hash in home-infra/authelia).
+        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/paperless-*",
       ]
     },
   ]
