@@ -15,9 +15,18 @@ resource "github_repository" "this" {
   allow_auto_merge    = false
 }
 
+# Skipped for archived repos: provider <= v6.13.0 fails the whole plan
+# when it reads this resource on an archived repository.
 resource "github_repository_vulnerability_alerts" "this" {
+  count = var.archived ? 0 : 1
+
   repository = github_repository.this.name
   enabled    = true
+}
+
+moved {
+  from = github_repository_vulnerability_alerts.this
+  to   = github_repository_vulnerability_alerts.this[0]
 }
 
 # Found live: a genuinely empty repository has no default branch until its
