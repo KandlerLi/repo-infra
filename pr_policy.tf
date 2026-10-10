@@ -45,12 +45,22 @@ resource "terraform_data" "pr_creation_policy" {
   }
 }
 
+# A repo switching to public in this same apply is still private when
+# this reads, and GitHub rejects the call; report it as not yet correct
+# instead. The fix below runs after the visibility change (it depends on
+# module.repo via the name), so one apply covers both.
 data "external" "fork_pr_approval" {
   for_each = local.public_repositories
 
   program = [
-    "gh", "api", "repos/${local.github_owner}/${module.repo[each.key].name}/actions/permissions/fork-pr-contributor-approval",
-    "--jq", "{policy: .approval_policy}",
+    "sh", "-c", <<-EOT
+      repo="repos/${local.github_owner}/${module.repo[each.key].name}"
+      if [ "$(gh api "$repo" --jq .private)" = "true" ]; then
+        echo '{"policy": "repository still private"}'
+      else
+        gh api "$repo/actions/permissions/fork-pr-contributor-approval" --jq '{policy: .approval_policy}'
+      fi
+    EOT
   ]
 }
 
