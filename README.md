@@ -3,7 +3,7 @@
 This repository brings GitHub repository configuration and, optionally, that
 repository's AWS deploy credentials under Terraform management from a single
 place — following the hardening pattern documented in
-`/home/julian/projects/docs/home-infra-ai-context/context/repository-security-blueprint.md`
+`/home/julian/projects/docs/home-infra-docs/docs/repository-security.md`
 (originally derived from the manually-hardened `dyndns` repository) and
 absorbing what was previously a separate `aws-account-bootstrap` root.
 
@@ -103,7 +103,7 @@ currently no IaC path for this specific field. That script was deleted on
 2026-09-02 (even narrowed to this one setting plus collaborator pruning, it
 was still an imperative script wrapping `gh api` against live state, which
 the standing IaC-only rule forbids); see
-`home-infra-ai-context/context/repository-security-blueprint.md` for the
+`home-infra-docs/docs/repository-security.md` for the
 manual `gh api` command to apply this by hand instead. Revisit once the
 provider adds support.
 
