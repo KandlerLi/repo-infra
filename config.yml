@@ -160,9 +160,15 @@ secrets-manager:
     - "terraform / Terraform plan"
     - "trivy-config / Trivy config scan"
 
+# Started as a private backup mirror like the ones above; since 2026-10
+# the single docs repo (home-infra-ai-context merged in), with gitleaks
+# CI and PR-based changes. Made public for branch protection per ADR 0022
+# after a content audit of its full history including PR refs -- see that
+# ADR's 2026-10-10 addendum in home-infra-docs.
 home-infra-docs:
-  visibility: private
-  branch_protection_enabled: false
+  visibility: public
+  required_status_check_contexts:
+    - "gitleaks / Gitleaks secret scan"
 
 # Merged into home-infra-docs 2026-10 (home-infra-docs#8); kept read-only
 # for its dated handovers. Unarchive first if any setting below must change.
