@@ -14,6 +14,12 @@ variable "action_secrets" {
   default     = {}
 }
 
+variable "archived" {
+  description = "Archive the repository (read-only on GitHub). Settings can no longer change once archived."
+  type        = bool
+  default     = false
+}
+
 variable "visibility" {
   description = "GitHub repository visibility"
   type        = string

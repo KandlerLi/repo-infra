@@ -2,6 +2,7 @@ resource "github_repository" "this" {
   name = var.repository_name
 
   visibility = var.visibility
+  archived   = var.archived
 
   has_projects           = true
   delete_branch_on_merge = true

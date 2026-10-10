@@ -164,9 +164,12 @@ home-infra-docs:
   visibility: private
   branch_protection_enabled: false
 
+# Merged into home-infra-docs 2026-10 (home-infra-docs#8); kept read-only
+# for its dated handovers. Unarchive first if any setting below must change.
 home-infra-ai-context:
   visibility: private
   branch_protection_enabled: false
+  archived: true
 
 # The k3s cluster's own app workloads (Blocky, ingress, Grafana,
 # home-agent, deluge, open-webui, landing-page, alertmanager) -- CI

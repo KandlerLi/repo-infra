@@ -17,7 +17,7 @@ managed:
   public, full branch protection, self-hosted GitHub Actions runner, AWS
   deploy roles
 - `home-infra`, `repo-infra`, `terraform-state`, `home-infra-docs`,
-  `home-infra-ai-context` — private backup mirrors (`visibility: private`,
+  `home-infra-ai-context` (archived) — private backup mirrors (`visibility: private`,
   `branch_protection_enabled: false`; single-owner git-history backups
   with no CI, not collaboratively-protected release repos — see
   `config.yml`'s own comment for why mandatory signed-commit PRs would

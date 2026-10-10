@@ -33,6 +33,7 @@ module "repo" {
   required_status_check_contexts = try(each.value.required_status_check_contexts, [])
   visibility                     = try(each.value.visibility, "public")
   branch_protection_enabled      = try(each.value.branch_protection_enabled, true)
+  archived                       = try(each.value.archived, false)
 
   aws = try(local.aws_policies[each.key], null) == null ? null : merge(
     local.aws_policies[each.key],
