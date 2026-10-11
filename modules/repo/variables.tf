@@ -48,11 +48,7 @@ variable "aws" {
   type = object({
     state_key                = string
     extra_readable_role_arns = optional(list(string), [])
-    # JSON-encoded list of IAM statement objects. Passed as a JSON string
-    # rather than list(any) because IAM statements have heterogeneous shapes
-    # (Resource is sometimes a string, sometimes a list; Condition is only
-    # present on some statements), which Terraform's type system can't
-    # unify into a single list(object(...)) type across a module boundary.
+    # A JSON string: IAM statements are too heterogeneous for one Terraform object type.
     apply_policy_statements = optional(string, "[]")
     plan_policy_statements  = optional(string, "[]")
   })

@@ -1,24 +1,9 @@
-# Every repo's own `trivy-config` required check (and the "made public
-# to get real branch protection" moves below) follow one rollout: see
-# KandlerLi/home-infra-docs/docs/adr/0022-trivy-config-scanning-and-public-repo-tradeoff.md
-# for what was actually fixed vs. suppressed per repo, and the full
-# public-repo tradeoff reasoning.
+# Public repos and their trivy checks: see home-infra-docs ADR 0022. Repo descriptions: home-infra-docs repositories.md.
 
-# Shared CI Dockerfile + two workflow_call reusable workflows
-# (terraform-checks.yml, terraform-apply.yml) that dyndns/website/
-# aws-budget/homeserver-health-check/ses-relay all call instead of each
-# carrying its own near-duplicate checks.yml/apply.yml/Dockerfile. Public
-# (required -- GitHub only allows cross-repo reusable workflows from a
-# personal account when the workflow's own repo is public). No runner
-# entry -- reusable-workflow jobs execute under the calling repo's own
-# runner registration and vars/secrets context, nothing ever runs inside
-# this repo itself. No required_status_check_contexts / action_variables
-# either, for the same reason: it has no CI of its own.
+# Public and CI-less: cross-repo reusable workflows need a public repo and run in the caller's context.
 gha-common: {}
 
-# checks.yml/apply.yml call gha-common's reusable workflows (2026-09-03)
-# -- see aws-budget's own comment for why these need the "terraform / "
-# prefix.
+# "terraform / " prefix: GitHub names a reusable workflow's jobs after the caller job. See README.
 dyndns:
   runner: true
   required_status_check_contexts:
@@ -26,15 +11,6 @@ dyndns:
     - "terraform / Terraform plan"
     - "trivy-config / Trivy config scan"
 
-# Static CV/personal site at www.jkandler.de (S3 + CloudFront + ACM).
-# Originally GitHub-hosted specifically to keep the deploy pipeline
-# independent of home-network uptime. Switched to the self-hosted home
-# runner on 2026-08-23 at the user's explicit request, after being shown
-# that tradeoff directly: a homeserver outage now also blocks shipping a
-# site fix, not just home services. See ADR 0016's Update section.
-# checks.yml/apply.yml call gha-common's reusable workflows (2026-09-03)
-# -- see aws-budget's own comment for why these need the "terraform / "
-# prefix.
 website:
   runner: true
   required_status_check_contexts:
@@ -42,15 +18,6 @@ website:
     - "terraform / Terraform plan"
     - "trivy-config / Trivy config scan"
 
-# $10/month AWS Budget alert. Self-hosted runner, same as everything else
-# now -- this repo's own apply.yml runs terraform apply directly, no
-# separate deploy step. checks.yml/apply.yml call gha-common's reusable
-# workflows from a job named "terraform" (2026-09-03) -- GitHub prefixes
-# a reusable workflow's own nested job names with the caller job's id in
-# every check-run/status-check context ("terraform / Validate", not just
-# "Validate"), found live when this repo's first migration PR reported
-# both checks green but GitHub still refused to merge it, still waiting
-# on the un-prefixed names below that no run will ever report again.
 aws-budget:
   runner: true
   required_status_check_contexts:
@@ -58,13 +25,6 @@ aws-budget:
     - "terraform / Terraform plan"
     - "trivy-config / Trivy config scan"
 
-# External reachability check for the homeserver (Route53 health check +
-# CloudWatch alarm + SNS email), deliberately the only monitoring piece
-# that runs in AWS -- the rest is planned to run on the homeserver itself
-# for cost reasons, but home-hosted monitoring can't alert about the home
-# network itself being unreachable. checks.yml/apply.yml call gha-common's
-# reusable workflows (2026-09-03) -- see aws-budget's own comment for why
-# these need the "terraform / " prefix.
 homeserver-health-check:
   runner: true
   required_status_check_contexts:
@@ -72,14 +32,6 @@ homeserver-health-check:
     - "terraform / Terraform plan"
     - "trivy-config / Trivy config scan"
 
-# SES sending identity used only to relay homeserver monitoring alert
-# emails (Alertmanager, in home-infra's monitoring role) to
-# julian.kandler@outlook.com -- separate from homeserver-health-check on
-# purpose, since that repo's own README says it's deliberately kept small
-# and not meant to grow into a general-purpose AWS monitoring stack.
-# checks.yml/apply.yml call gha-common's reusable workflows (2026-09-03)
-# -- see aws-budget's own comment for why these need the "terraform / "
-# prefix.
 ses-relay:
   runner: true
   required_status_check_contexts:
@@ -87,33 +39,11 @@ ses-relay:
     - "terraform / Terraform plan"
     - "trivy-config / Trivy config scan"
 
-# Started as a no-CI backup mirror like the ones below, but grew a real
-# checks.yml (ansible-playbook --syntax-check + the unit test suite) since
-# it's the most actively-developed repo in this workspace. Found live: its
-# runs-on: [self-hosted, home, debian] has been queuing forever with no
-# runner able to pick it up -- runner: true was never added here, so
-# sync_github_runner_repositories.py never included it. That's since been
-# fixed (runner: true below); made public with the same branch protection
-# as every other public repo 2026-09-13, once its own content was checked
-# for anything that would've been a blocker (no hardcoded secrets --
-# AWS Secrets Manager now, not this repo -- and only private RFC1918
-# addresses, not anything internet-routable). checks.yml's own trigger
-# had to move from push to pull_request first (separate PR,
-# home-infra#27) so the required "Validate" check actually fires against
-# a PR, not only after it's already merged.
 home-infra:
   required_status_check_contexts:
     - "Validate"
   runner: true
 
-# Backup mirrors for repos that previously existed only on one laptop, with
-# no other copy anywhere -- private, no CI, no branch protection. These are
-# single-owner git history backups, not collaboratively-protected release
-# repos: mandatory signed-commit PRs (repo-infra's normal baseline) would
-# only make routine backup pushes painful here, for zero actual benefit
-# (nothing runs CI against them, nobody else pushes to them). repo-infra
-# and terraform-state are the exceptions below -- both public, with real
-# CI and standard branch protection -- see ADR 0022 (top of this file).
 repo-infra:
   required_status_check_contexts:
     - "trivy-config / Trivy config scan"
@@ -122,36 +52,10 @@ terraform-state:
   required_status_check_contexts:
     - "trivy-config / Trivy config scan"
 
-# The k3s cluster's own bootstrap root -- the self-hosted runner itself
-# (modules/github_runner) plus the cluster-scoped PersistentVolumes a
-# namespaced Role could never be scoped to by name (see k3s-apps' own
-# split, 2026-09-03). Same category as repo-infra/terraform-state
-# above -- rare, admin-privileged, applied only locally by a human,
-# never CI. Originally a second Terraform root nested inside the
-# k3s-apps repo itself; extracted into its own repo here to actually
-# live alongside its real siblings instead of inside the repo it
-# grants access to. Public, same tradeoff as terraform-state/repo-infra
-# -- see ADR 0022.
 k3s-bootstrap:
   required_status_check_contexts:
     - "trivy-config / Trivy config scan"
 
-# The AWS Secrets Manager secret *containers*, migrated one at a time out
-# of terraform-state (secrets_manager.tf) so the secrets concern is
-# separable from the state-bucket bootstrap concern. Unlike the three
-# roots above, this one does NOT actually share their self-escalation
-# risk: it never touches IAM at all -- julian's own read/write grant on
-# every secret lives entirely in terraform-state/operator.tf, deliberately
-# kept out of this repo (see its own README, "IAM grants live in
-# terraform-state, not here"). It only ever creates empty
-# aws_secretsmanager_secret *containers* -- no GetSecretValue,
-# PutSecretValue, or DeleteSecret anywhere in its Terraform. CI-applied
-# 2026-09-13 via its own dedicated OIDC role (aws_policies.tf), scoped to
-# exactly CreateSecret/DescribeSecret on the name prefixes it already
-# manages -- a compromised run can create a bogus empty container at
-# worst, never read or write an actual secret value. Public -- see ADR
-# 0022 for why, and for the AWS-0098 suppression this repo's own
-# README.md documents.
 secrets-manager:
   visibility: public
   runner: true
@@ -160,45 +64,27 @@ secrets-manager:
     - "terraform / Terraform plan"
     - "trivy-config / Trivy config scan"
 
-# Started as a private backup mirror like the ones above; since 2026-10
-# the single docs repo (home-infra-ai-context merged in), with gitleaks
-# CI and PR-based changes. Made public for branch protection per ADR 0022
-# after a content audit of its full history including PR refs -- see that
-# ADR's 2026-10-10 addendum in home-infra-docs.
+# Public after a full-history content audit: ADR 0022's 2026-10-10 addendum.
 home-infra-docs:
   visibility: public
   required_status_check_contexts:
     - "gitleaks / Gitleaks secret scan"
 
-# Private issue tracker for open work (labels parked/backlog, see
-# tracker.tf). Private on purpose: issues name unfixed weaknesses and
-# unrotated secrets. No code, no CI, so no branch protection.
+# Private on purpose: issues name unfixed weaknesses and unrotated secrets.
 home-infra-tracker:
   visibility: private
   branch_protection_enabled: false
 
-# Merged into home-infra-docs 2026-10 (home-infra-docs#8); kept read-only
-# for its dated handovers. Unarchive first if any setting below must change.
+# Archived, kept for its handovers. Unarchive before changing any setting below.
 home-infra-ai-context:
   visibility: private
   branch_protection_enabled: false
   archived: true
 
-# The k3s cluster's own app workloads (Blocky, ingress, Grafana,
-# home-agent, deluge, open-webui, landing-page, alertmanager) -- CI
-# applies this root on every merge to main, via a narrowly-scoped
-# in-cluster ServiceAccount (bootstrap/ in that repo, applied locally,
-# owns the RBAC and the runner itself); the PR review is the only gate.
-# Public -- see ADR 0022 for why, and for the k3s-apps#52 fix this
-# repo's own trivy-config check gates on.
 k3s-apps:
   visibility: public
   runner: true
-  # Named "trivy-config / Trivy config scan" like every other repo's,
-  # not un-prefixed like this repo's own Validate/Terraform plan above
-  # -- the prefix comes from security-scan.yml calling gha-common's
-  # reusable workflow, regardless of how this repo's own inline
-  # checks.yml happens to name its contexts.
+  # Prefixed, unlike its inline checks: the scan runs through gha-common's reusable workflow.
   required_status_check_contexts:
     - "Validate"
     - "Terraform plan"

@@ -10,29 +10,12 @@ absorbing what was previously a separate `aws-account-bootstrap` root.
 ## Scope
 
 Managed repositories are declared in `config.yml`. Each key becomes a GitHub
-repository managed through the shared `./modules/repo` module. Currently
-managed:
-
-- `dyndns`, `website`, `aws-budget` — real Terraform/CI repositories,
-  public, full branch protection, self-hosted GitHub Actions runner, AWS
-  deploy roles
-- `home-infra`, `repo-infra`, `terraform-state`,
-  `home-infra-ai-context` (archived) — private backup mirrors (`visibility: private`,
-  `branch_protection_enabled: false`; single-owner git-history backups
-  with no CI, not collaboratively-protected release repos — see
-  `config.yml`'s own comment for why mandatory signed-commit PRs would
-  only add friction here)
-
-The scratch repository `testing`, previously used to validate the module,
-was deleted (removed from `config.yml`, which destroys its
-`github_repository` resource along with everything else the module
-created for it) once it had served its purpose.
-
-`whoami` has pre-existing manual protection (a disabled branch ruleset,
-non-default merge settings, unrestricted Actions permissions) but is
-**intentionally excluded** from this root pending an archive/delete decision
-for that repository. Do not add it to `config.yml` without a separate,
-deliberate decision.
+repository managed through the shared `./modules/repo` module. Every repo
+in the workspace is there: public with full branch protection, except
+`home-infra-tracker` (private, no code, no branch protection) and the
+archived `home-infra-ai-context`. Self-hosted runners, required checks and
+AWS deploy roles are set per entry. What each repo is for:
+[`home-infra-docs`' `repositories.md`](https://github.com/KandlerLi/home-infra-docs/blob/main/docs/repositories.md).
 
 Branch protection is a **hardcoded baseline applied to every managed
 repository**, not opt-in — every `config.yml` entry gets one, matching the
@@ -43,10 +26,11 @@ repository with no CI has nothing to require):
 
 ```yaml
 dyndns:
+  runner: true
   required_status_check_contexts:
-    - "Owner approval"
-    - "Validate"
-    - "Terraform plan"
+    - "terraform / Validate"
+    - "terraform / Terraform plan"
+    - "trivy-config / Trivy config scan"
 ```
 
 ## What the module manages per repository
@@ -66,8 +50,8 @@ GitHub side (always):
   first apply may need a second apply (after the first push creates
   `main`) before this actually takes effect.
 - `github_branch_protection` — the baseline described above, applied when
-  `branch_protection_enabled` is true (the default; false for the private
-  backup mirrors): no force-pushes or deletions on the default branch,
+  `branch_protection_enabled` is true (the default; false for repos without
+  code, like `home-infra-tracker`): no force-pushes or deletions on the default branch,
   required linear history, required signed commits, required conversation
   resolution, admin enforcement (nobody, including the owner, can bypass),
   `required_approving_review_count = 0` native reviews (GitHub cannot let a
@@ -78,34 +62,20 @@ GitHub side (always):
 - `github_actions_variable` — repo-specific variables from `config.yml`, plus
   `AWS_ACCOUNT_ID`/`AWS_ROLE_ARN`/`AWS_PLAN_ROLE_ARN` when AWS access is
   configured (see below)
-- `github_repository_environment` — a `production` environment requiring
-  owner review, also gated on `branch_protection_enabled` (GitHub's
-  required-reviewers environment protection needs a paid plan for private
-  repositories — found live when this unconditionally applied to the
-  private backup mirrors)
+- `github_repository_environment` — a `production` environment, gated on
+  `branch_protection_enabled`. It has no required reviewers any more
+  (removed 2026-09-07: the owner already reviews and merges every PR), but
+  stays because every apply job's AWS OIDC trust policy requires the
+  `environment:production` subject; deleting it would break AWS access
 - `github_actions_repository_permissions` — the allowed-Actions allowlist
-  (`actions/checkout@*`, `aws-actions/configure-aws-credentials@*`,
-  `hashicorp/setup-terraform@*`) and `sha_pinning_required` (hardcoded to
-  `true` for every managed repository)
+  (see "GitHub Actions allowlist notes" below) and `sha_pinning_required`
+  (hardcoded to `true` for every managed repository)
 - `github_workflow_repository_permissions` — default workflow token
   permissions and PR-approval restriction
 
-**Not managed here**: `pull_request_creation_policy` (the setting that
-actually restricts who can *open* a PR at all — GitHub added this in Feb
-2026 and `terraform-provider-github` has no resource for it yet; tracked as
-unimplemented feature requests
-[#3251](https://github.com/integrations/terraform-provider-github/issues/3251)
-and
-[#3198](https://github.com/integrations/terraform-provider-github/issues/3198)).
-It used to be set, once per repository, by `dyndns/scripts/protect-repository.sh`
-— the one remaining piece of that script, kept only because there is
-currently no IaC path for this specific field. That script was deleted on
-2026-09-02 (even narrowed to this one setting plus collaborator pruning, it
-was still an imperative script wrapping `gh api` against live state, which
-the standing IaC-only rule forbids); see
-`home-infra-docs/docs/repository-security.md` for the
-manual `gh api` command to apply this by hand instead. Revisit once the
-provider adds support.
+`pull_request_creation_policy` and fork-PR approval have no provider
+resource yet; `pr_policy.tf` manages both, see "PR creation and fork
+approval policy" below.
 
 AWS side (only for repositories with an entry in `aws_policies.tf`, e.g.
 `dyndns`):
@@ -146,8 +116,8 @@ This is the workflow the consolidation exists for — one repository, one
    wiring the resulting ARNs into the repo's Actions variables) is automatic.
 3. `terraform plan`, review, `terraform apply`.
 
-A repository with no entry in `aws_policies.tf` (like the private backup
-mirrors) gets no AWS role at all — `var.aws` is `null` and the module
+A repository with no entry in `aws_policies.tf` (like `home-infra-docs`)
+gets no AWS role at all — `var.aws` is `null` and the module
 skips every AWS resource for it.
 
 ## Adding a repository with a self-hosted GitHub Actions runner
@@ -197,6 +167,107 @@ repositories exist and what they get.
    trust policy (`assume_role_policy`) — is a stop condition; re-check the
    live values before applying.
 5. `terraform apply`, then delete the now-satisfied `import` blocks.
+
+## Required status check names
+
+A repository whose `checks.yml` calls a gha-common reusable workflow from
+a job named `terraform` reports its checks as `terraform / Validate` and
+`terraform / Terraform plan`: GitHub prefixes a reusable workflow's jobs
+with the caller job's id in every check context. Listing the un-prefixed
+names in `required_status_check_contexts` leaves a PR green but
+unmergeable, waiting for checks no run will ever report (found live on
+`aws-budget`'s first migration PR). The same applies to
+`trivy-config / Trivy config scan` and `gitleaks / Gitleaks secret scan`,
+including in `k3s-apps`, whose own inline checks are un-prefixed.
+
+## GitHub Actions allowlist notes
+
+`github_actions_repository_permissions` allows the same list of actions
+in every managed repository. What it took to get that list right:
+
+- Reusable workflows are governed by the same allowlist. A caller of a
+  gha-common workflow missing from the list fails with `startup_failure`
+  before running a step.
+- Entries match by exact workflow path, not by owning repository, so each
+  gha-common workflow (`terraform-checks.yml`, `trivy-config.yml`,
+  `trivy-image.yml`, `gitleaks.yml`, ...) needs its own entry.
+- Every action a workflow runs transitively counts, not just the
+  top-level reference: `aquasecurity/trivy-action` needs its nested
+  `setup-trivy`, which needs `actions/cache/restore` and
+  `actions/cache/save` as separate entries (`actions/cache@*` alone
+  doesn't cover them).
+- `actions/github-script` is there for the plan comment on PRs
+  (gha-common's `terraform-checks.yml` and `k3s-apps`' own checks); without
+  it `k3s-apps#87` hit `startup_failure`.
+
+## IAM policy notes
+
+`aws_policies.tf` holds each repository's deploy permissions beyond the
+state-bucket baseline `modules/repo` grants. Two kinds of non-obvious
+entries recur there, almost all found live as an AccessDenied:
+
+**Actions the AWS provider calls without the config asking for them.**
+
+- `secretsmanager:GetResourcePolicy` on every refresh of a secret, and
+  `secretsmanager:UpdateSecret` to edit an existing container
+  (`CreateSecret` doesn't cover it).
+- `budgets:ViewBudget` is the IAM action behind the `DescribeBudget` API;
+  `Describe*`-named actions don't exist for Budgets and silently grant
+  nothing. Reading a budget also always calls `ListTagsForResource`.
+- An `aws_s3_bucket` refresh checks the full set of bucket-level settings
+  (`GetBucketAcl`, `GetBucketCORS`, ...), whichever ones the config sets.
+- CloudFront Functions need `PublishFunction` when `publish = true`, and
+  the plan role needs `DescribeFunction`/`GetFunction` to refresh one.
+- An `aws_kms_alias` resource, and every `data "aws_kms_alias"` lookup,
+  needs `kms:ListAliases`; referencing a key from config needs
+  `kms:DescribeKey`; setting `kms_key_id` on an existing log group needs
+  `logs:AssociateKmsKey` (see `home-infra-docs`' decisions.md).
+
+**Where `Resource = "*"` is unavoidable.** CloudFront distributions and
+OAC; anything whose ID only exists after creation (`acm:RequestCertificate`,
+budget creation, Route53 health checks, `kms:CreateKey`); `kms:ListAliases`;
+SES v1 identity actions (denied under identity-ARN scoping even with the
+right ARN, confirmed three times); and `ses:SendEmail` for the
+rotation-reminder mail, scoped to `identity/*` because SES also checks
+the external recipient's identity ARN, which this account can never own.
+The action stays exactly `ses:SendEmail`.
+
+**Design choices.**
+
+- `k3s-apps` gets the same secret reads for plan and apply: the values
+  flow into its Terraform, so a plan needs `GetSecretValue` too.
+- Write access for scheduled jobs (the blocky password rotation, the
+  rotation reminder) is apply-only and in its own statement, so a leaked
+  token reaches exactly that one permission.
+- `secrets-manager`'s CI only creates and describes empty containers
+  under its three name prefixes, never touching a secret value.
+- IAM-user statements (`dyndns`' ACME user, `ses-relay`'s SMTP user) are
+  scoped to that one user, never `"*"`. Each user sits in a single-member
+  group for trivy AWS-0143; `AddUserToGroup`/`RemoveUserFromGroup` need
+  permission on the group only.
+- The shared KMS key is resolved by alias in this root, so the real ARN
+  lands in each policy and follows the key if it is ever recreated.
+
+**Leftover to remove.** `website`'s `ManageSiteBucket` and
+`ReadSiteBucket` still list the `jkandler-website` bucket ARNs from a
+bucket rename that was abandoned (ADR 0022); the bucket stays
+`www.jkandler.de`. Removing them is an IAM change to apply deliberately,
+not part of a comment cleanup.
+
+## PR creation and fork approval policy
+
+`pr_policy.tf` manages two settings `terraform-provider-github` has no
+resource for (upstream #3198): who may open a pull request, and which
+fork PRs need the owner's approval before their workflows run. Both keep
+strangers' code off the self-hosted runners every public repo here uses.
+A data source reads the live value on every plan, and a `terraform_data`
+keyed on "is it correct?" runs the `gh api` fix only when it isn't, so
+plan shows drift and apply corrects it (a bare `local-exec` without the
+read is not acceptable, see `home-infra-docs`' decisions.md). After a
+fix the next plan shows one harmless replacement as the trigger flips
+back; the command is idempotent. A repository created or made public in
+the same apply reads as not yet correct, so its fix runs after the
+repository change. Needs a `gh` CLI with admin rights on these repos.
 
 ## State
 
