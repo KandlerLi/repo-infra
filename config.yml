@@ -170,6 +170,13 @@ home-infra-docs:
   required_status_check_contexts:
     - "gitleaks / Gitleaks secret scan"
 
+# Private issue tracker for open work (labels parked/backlog, see
+# tracker.tf). Private on purpose: issues name unfixed weaknesses and
+# unrotated secrets. No code, no CI, so no branch protection.
+home-infra-tracker:
+  visibility: private
+  branch_protection_enabled: false
+
 # Merged into home-infra-docs 2026-10 (home-infra-docs#8); kept read-only
 # for its dated handovers. Unarchive first if any setting below must change.
 home-infra-ai-context:
