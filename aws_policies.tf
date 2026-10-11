@@ -331,13 +331,11 @@ locals {
 
       apply_policy_statements = [
         {
-          # Bucket lifecycle and the deploy's s3 sync. The jkandler-website ARNs are leftovers: see README.
+          # Bucket lifecycle and the deploy's s3 sync.
           Sid    = "ManageSiteBucket"
           Effect = "Allow"
           Action = "s3:*"
           Resource = [
-            "arn:aws:s3:::jkandler-website",
-            "arn:aws:s3:::jkandler-website/*",
             "arn:aws:s3:::www.jkandler.de",
             "arn:aws:s3:::www.jkandler.de/*",
           ]
@@ -462,7 +460,7 @@ locals {
             "s3:GetReplicationConfiguration",
             "s3:ListBucket",
           ]
-          Resource = ["arn:aws:s3:::jkandler-website", "arn:aws:s3:::www.jkandler.de"]
+          Resource = ["arn:aws:s3:::www.jkandler.de"]
         },
         {
           Sid      = "DescribeSharedKmsKeyForSiteBucket"

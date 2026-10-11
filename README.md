@@ -248,12 +248,6 @@ The action stays exactly `ses:SendEmail`.
 - The shared KMS key is resolved by alias in this root, so the real ARN
   lands in each policy and follows the key if it is ever recreated.
 
-**Leftover to remove.** `website`'s `ManageSiteBucket` and
-`ReadSiteBucket` still list the `jkandler-website` bucket ARNs from a
-bucket rename that was abandoned (ADR 0022); the bucket stays
-`www.jkandler.de`. Removing them is an IAM change to apply deliberately,
-not part of a comment cleanup.
-
 ## PR creation and fork approval policy
 
 `pr_policy.tf` manages two settings `terraform-provider-github` has no
