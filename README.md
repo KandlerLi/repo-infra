@@ -66,8 +66,8 @@ GitHub side (always):
   first apply may need a second apply (after the first push creates
   `main`) before this actually takes effect.
 - `github_branch_protection` — the baseline described above, applied when
-  `branch_protection_enabled` is true (the default; false for the private
-  backup mirrors): no force-pushes or deletions on the default branch,
+  `branch_protection_enabled` is true (the default; false for repos without
+  code, like `home-infra-tracker`): no force-pushes or deletions on the default branch,
   required linear history, required signed commits, required conversation
   resolution, admin enforcement (nobody, including the owner, can bypass),
   `required_approving_review_count = 0` native reviews (GitHub cannot let a
@@ -78,34 +78,20 @@ GitHub side (always):
 - `github_actions_variable` — repo-specific variables from `config.yml`, plus
   `AWS_ACCOUNT_ID`/`AWS_ROLE_ARN`/`AWS_PLAN_ROLE_ARN` when AWS access is
   configured (see below)
-- `github_repository_environment` — a `production` environment requiring
-  owner review, also gated on `branch_protection_enabled` (GitHub's
-  required-reviewers environment protection needs a paid plan for private
-  repositories — found live when this unconditionally applied to the
-  private backup mirrors)
+- `github_repository_environment` — a `production` environment, gated on
+  `branch_protection_enabled`. It has no required reviewers any more
+  (removed 2026-09-07: the owner already reviews and merges every PR), but
+  stays because every apply job's AWS OIDC trust policy requires the
+  `environment:production` subject; deleting it would break AWS access
 - `github_actions_repository_permissions` — the allowed-Actions allowlist
-  (`actions/checkout@*`, `aws-actions/configure-aws-credentials@*`,
-  `hashicorp/setup-terraform@*`) and `sha_pinning_required` (hardcoded to
-  `true` for every managed repository)
+  (see "GitHub Actions allowlist notes" below) and `sha_pinning_required`
+  (hardcoded to `true` for every managed repository)
 - `github_workflow_repository_permissions` — default workflow token
   permissions and PR-approval restriction
 
-**Not managed here**: `pull_request_creation_policy` (the setting that
-actually restricts who can *open* a PR at all — GitHub added this in Feb
-2026 and `terraform-provider-github` has no resource for it yet; tracked as
-unimplemented feature requests
-[#3251](https://github.com/integrations/terraform-provider-github/issues/3251)
-and
-[#3198](https://github.com/integrations/terraform-provider-github/issues/3198)).
-It used to be set, once per repository, by `dyndns/scripts/protect-repository.sh`
-— the one remaining piece of that script, kept only because there is
-currently no IaC path for this specific field. That script was deleted on
-2026-09-02 (even narrowed to this one setting plus collaborator pruning, it
-was still an imperative script wrapping `gh api` against live state, which
-the standing IaC-only rule forbids); see
-`home-infra-docs/docs/repository-security.md` for the
-manual `gh api` command to apply this by hand instead. Revisit once the
-provider adds support.
+`pull_request_creation_policy` and fork-PR approval have no provider
+resource yet; `pr_policy.tf` manages both, see "PR creation and fork
+approval policy" below.
 
 AWS side (only for repositories with an entry in `aws_policies.tf`, e.g.
 `dyndns`):
@@ -146,8 +132,8 @@ This is the workflow the consolidation exists for — one repository, one
    wiring the resulting ARNs into the repo's Actions variables) is automatic.
 3. `terraform plan`, review, `terraform apply`.
 
-A repository with no entry in `aws_policies.tf` (like the private backup
-mirrors) gets no AWS role at all — `var.aws` is `null` and the module
+A repository with no entry in `aws_policies.tf` (like `home-infra-docs`)
+gets no AWS role at all — `var.aws` is `null` and the module
 skips every AWS resource for it.
 
 ## Adding a repository with a self-hosted GitHub Actions runner
