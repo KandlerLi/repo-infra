@@ -8,7 +8,7 @@
 # terraform_data keyed on "is it correct?" runs the gh api fix only
 # when it isn't -- so plan shows drift and apply corrects it. A bare
 # local-exec without that read is not acceptable here (see
-# docs/home-infra-docs/docs/decisions.md). After a fix, the
+# home-infra-docs/docs/decisions.md). After a fix, the
 # next plan shows one more harmless replacement as the trigger flips
 # back to true; the command is idempotent.
 #

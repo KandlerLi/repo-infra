@@ -222,7 +222,7 @@ locals {
             # calls this AWS API directly -- distinct from anything above,
             # and distinct from the kms:* grants below (those cover using
             # the key itself, not associating/disassociating it with a log
-            # group). See docs/home-infra-docs' decisions.md for
+            # group). See home-infra-docs' decisions.md for
             # the AccessDeniedException this grant closes.
             "logs:AssociateKmsKey",
             "logs:DisassociateKmsKey",

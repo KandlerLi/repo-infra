@@ -3,7 +3,7 @@
 This repository brings GitHub repository configuration and, optionally, that
 repository's AWS deploy credentials under Terraform management from a single
 place — following the hardening pattern documented in
-`/home/julian/projects/docs/home-infra-docs/docs/repository-security.md`
+`/home/julian/projects/home-infra-docs/docs/repository-security.md`
 (originally derived from the manually-hardened `dyndns` repository) and
 absorbing what was previously a separate `aws-account-bootstrap` root.
 
