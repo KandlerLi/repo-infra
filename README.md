@@ -10,29 +10,12 @@ absorbing what was previously a separate `aws-account-bootstrap` root.
 ## Scope
 
 Managed repositories are declared in `config.yml`. Each key becomes a GitHub
-repository managed through the shared `./modules/repo` module. Currently
-managed:
-
-- `dyndns`, `website`, `aws-budget` — real Terraform/CI repositories,
-  public, full branch protection, self-hosted GitHub Actions runner, AWS
-  deploy roles
-- `home-infra`, `repo-infra`, `terraform-state`,
-  `home-infra-ai-context` (archived) — private backup mirrors (`visibility: private`,
-  `branch_protection_enabled: false`; single-owner git-history backups
-  with no CI, not collaboratively-protected release repos — see
-  `config.yml`'s own comment for why mandatory signed-commit PRs would
-  only add friction here)
-
-The scratch repository `testing`, previously used to validate the module,
-was deleted (removed from `config.yml`, which destroys its
-`github_repository` resource along with everything else the module
-created for it) once it had served its purpose.
-
-`whoami` has pre-existing manual protection (a disabled branch ruleset,
-non-default merge settings, unrestricted Actions permissions) but is
-**intentionally excluded** from this root pending an archive/delete decision
-for that repository. Do not add it to `config.yml` without a separate,
-deliberate decision.
+repository managed through the shared `./modules/repo` module. Every repo
+in the workspace is there: public with full branch protection, except
+`home-infra-tracker` (private, no code, no branch protection) and the
+archived `home-infra-ai-context`. Self-hosted runners, required checks and
+AWS deploy roles are set per entry. What each repo is for:
+[`home-infra-docs`' `repositories.md`](https://github.com/KandlerLi/home-infra-docs/blob/main/docs/repositories.md).
 
 Branch protection is a **hardcoded baseline applied to every managed
 repository**, not opt-in — every `config.yml` entry gets one, matching the
@@ -43,10 +26,11 @@ repository with no CI has nothing to require):
 
 ```yaml
 dyndns:
+  runner: true
   required_status_check_contexts:
-    - "Owner approval"
-    - "Validate"
-    - "Terraform plan"
+    - "terraform / Validate"
+    - "terraform / Terraform plan"
+    - "trivy-config / Trivy config scan"
 ```
 
 ## What the module manages per repository
