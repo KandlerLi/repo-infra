@@ -9,7 +9,7 @@
 # add a matching entry here with its state key and the IAM statements its
 # deployment needs. See README.md for the full walkthrough.
 
-# bootstrap/terraform-state's own shared CMK (shared_kms_key.tf), looked
+# KandlerLi/terraform-state's own shared CMK (shared_kms_key.tf), looked
 # up by its fixed alias rather than threaded through as a repository
 # variable -- this root's own local-apply credentials already have
 # enough access for the lookup (same admin-equivalent identity that
@@ -35,11 +35,11 @@ locals {
   # hand-built with a trailing "-*" wildcard for the random suffix
   # Secrets Manager appends, matching dyndns's own established
   # convention -- these are a different repo's own resources
-  # (aws/secrets-manager), so there's no real Terraform resource
+  # (KandlerLi/secrets-manager), so there's no real Terraform resource
   # reference to use here the way that repo's own operator.tf could.
-  # Excludes home-infra/nextcloud (Ansible-only, infra/home-infra never
+  # Excludes home-infra/nextcloud (Ansible-only, KandlerLi/home-infra never
   # touches this repo) and home-infra/github-runner
-  # (bootstrap/k3s-bootstrap's own, not k3s-apps').
+  # (KandlerLi/k3s-bootstrap's own, not k3s-apps').
   k3s_apps_secretsmanager_read_statements = [
     {
       Sid    = "ReadSecretsManagerSecrets"
@@ -73,7 +73,7 @@ locals {
   ]
 
   # Write access for the scheduled blocky_postgres_password rotation
-  # workflow (infra/k3s-apps' own rotate-blocky-postgres.yml) -- the
+  # workflow (KandlerLi/k3s-apps' own rotate-blocky-postgres.yml) -- the
   # only secret this CI role can ever write, and apply-only, matching
   # dyndns's own ManageDynDnsSecret/ReadDynDnsSecretMetadata split
   # above (a plan never needs to write anything). Deliberately its own
@@ -89,7 +89,7 @@ locals {
     },
   ]
 
-  # aws/secrets-manager's own CI role, added 2026-09-13 once this
+  # KandlerLi/secrets-manager's own CI role, added 2026-09-13 once this
   # root's real risk profile turned out not to match terraform-state/
   # k3s-bootstrap's (see that repo's own README): it never touches IAM,
   # only ever creates or updates empty aws_secretsmanager_secret
@@ -136,7 +136,7 @@ locals {
   ]
 
   # For the scheduled rotation-reminder workflow (check-secret-rotation.yml,
-  # BACKLOG.md's "Manually-rotated Secrets Manager secrets have no
+  # the private task list's "Manually-rotated Secrets Manager secrets have no
   # rotation reminder") -- same shape as k3s_apps_blocky_rotation_statement
   # above: a scheduled job's own extra permission, apply-only, added as
   # its own narrow statement rather than folded into the broad read/
@@ -222,7 +222,7 @@ locals {
             # calls this AWS API directly -- distinct from anything above,
             # and distinct from the kms:* grants below (those cover using
             # the key itself, not associating/disassociating it with a log
-            # group). See docs/home-infra-docs' decisions.md for
+            # group). See KandlerLi/home-infra-docs' decisions.md for
             # the AccessDeniedException this grant closes.
             "logs:AssociateKmsKey",
             "logs:DisassociateKmsKey",

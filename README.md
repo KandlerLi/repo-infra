@@ -3,7 +3,7 @@
 This repository brings GitHub repository configuration and, optionally, that
 repository's AWS deploy credentials under Terraform management from a single
 place — following the hardening pattern documented in
-`/home/julian/projects/docs/home-infra-docs/docs/repository-security.md`
+[`home-infra-docs/docs/repository-security.md`](https://github.com/KandlerLi/home-infra-docs/blob/main/docs/repository-security.md)
 (originally derived from the manually-hardened `dyndns` repository) and
 absorbing what was previously a separate `aws-account-bootstrap` root.
 
@@ -158,7 +158,7 @@ This root only holds the `runner: true` convention key that tells
 `home-infra` which repositories should get one:
 
 1. Add `runner: true` to the repository's entry in `config.yml`.
-2. In `/home/julian/projects/infra/home-infra`, run
+2. In [`home-infra`](https://github.com/KandlerLi/home-infra), run
    `.venv/bin/python scripts/sync_github_runner_repositories.py`. This
    regenerates
    `ansible/inventory/group_vars/all/github_runner_repositories.yml` from
@@ -213,7 +213,7 @@ roles; never remove it without an explicitly approved design change.
 ## Validation
 
 ```bash
-cd /home/julian/projects/github/repo-infra
+cd repo-infra
 terraform fmt -check -recursive
 terraform validate
 terraform plan
@@ -229,7 +229,7 @@ OIDC provider. There is no committed provider configuration for either.
 
 `scripts/roll-out.sh plan`/`apply` does all of the above in one command --
 pulls `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY` for the `repo-infra-local`
-IAM identity from `pass` (see `bootstrap/terraform-state/README.md`'s
+IAM identity from `pass` (see [`terraform-state/README.md`](https://github.com/KandlerLi/terraform-state/blob/main/README.md)'s
 "repo-infra-local Identity" section for how that identity and its `pass`
 entries get created) and `GITHUB_TOKEN` from `gh auth token`, runs
 `terraform fmt -check`/`validate`/`plan`, and for `apply` mode

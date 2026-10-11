@@ -1,6 +1,6 @@
 # Every repo's own `trivy-config` required check (and the "made public
 # to get real branch protection" moves below) follow one rollout: see
-# docs/home-infra-docs/docs/adr/0022-trivy-config-scanning-and-public-repo-tradeoff.md
+# KandlerLi/home-infra-docs/docs/adr/0022-trivy-config-scanning-and-public-repo-tradeoff.md
 # for what was actually fixed vs. suppressed per repo, and the full
 # public-repo tradeoff reasoning.
 
