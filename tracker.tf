@@ -1,5 +1,4 @@
-# The two labels that replace the old PARKED/BACKLOG split. Authoritative:
-# GitHub's default labels (bug, enhancement, ...) are removed on purpose.
+# The two labels replacing PARKED/BACKLOG; GitHub's default labels are removed on purpose.
 resource "github_issue_labels" "tracker" {
   repository = module.repo["home-infra-tracker"].name
 

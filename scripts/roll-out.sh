@@ -1,19 +1,5 @@
 #!/usr/bin/env bash
-# Mimics what a real CI pipeline would do for this repo's own apply,
-# run locally: pull the credentials this repo's Terraform needs, run
-# it, and leave nothing behind.
-#
-#   scripts/roll-out.sh plan
-#   scripts/roll-out.sh apply
-#
-# Needs:
-# - AWS credentials for the repo-infra-local IAM identity, in pass at
-#   aws/repo-infra-local/access-key-id and .../secret-access-key -- see
-#   this repo's own README.md, "First apply" section in
-#   KandlerLi/terraform-state/README.md's "repo-infra-local Identity"
-#   for how those got there in the first place.
-# - `gh` already authenticated locally (GITHUB_TOKEN comes from
-#   `gh auth token`, not a new credential).
+# Local plan/apply with the repo-infra-local identity: see README, "Rolling out locally".
 
 set -euo pipefail
 
@@ -55,17 +41,10 @@ cd "${repo_root}"
 terraform init -input=false
 terraform fmt -check -recursive
 terraform validate
-# -input=false on plan/apply too, not just init -- confirmed live,
-# 2026-09-08: a missing/unexported required variable otherwise drops
-# into an interactive "var.foo" prompt instead of failing outright.
-# This repo has no root-level variables left as of the SOPS-to-
-# Secrets-Manager cutover, but kept as a cheap general
-# safety default rather than removed along with that scenario.
+# -input=false: fail on a missing variable instead of prompting for it.
 terraform plan -input=false
 
 if [ "${mode}" = "apply" ]; then
-  # Interactive on purpose -- terraform's own plan-and-confirm prompt is
-  # the review step, not -auto-approve. -input=false doesn't affect
-  # that prompt, only variable-value prompts.
+  # Interactive on purpose: terraform's own confirm prompt is the review step.
   terraform apply -input=false
 fi

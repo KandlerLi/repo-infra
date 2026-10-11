@@ -1,34 +1,16 @@
-# Two repository settings terraform-provider-github has no resource for
-# (upstream issue #3198): who may open a pull request, and which fork
-# PRs need the owner's approval before their workflows run. Both keep
-# strangers' code off the self-hosted runners, which every public repo
-# here uses.
-#
-# Pattern: a data source reads the live value on every plan, and a
-# terraform_data keyed on "is it correct?" runs the gh api fix only
-# when it isn't -- so plan shows drift and apply corrects it. A bare
-# local-exec without that read is not acceptable here (see
-# KandlerLi/home-infra-docs/docs/decisions.md). After a fix, the
-# next plan shows one more harmless replacement as the trigger flips
-# back to true; the command is idempotent.
-#
-# Needs a gh CLI logged in with admin rights on these repos -- this
-# root is local-only, never CI.
+# Settings the provider can't manage (issue #3198): read live, fix via gh api only on drift. See README.
 
 locals {
   github_owner = "KandlerLi"
 
-  # GitHub rejects the fork-approval endpoint for private repositories;
-  # only collaborators can fork those anyway.
+  # GitHub rejects the fork-approval endpoint for private repos.
   public_repositories = {
     for name, cfg in local.config : name => cfg
     if try(cfg.visibility, "public") == "public"
   }
 }
 
-# A repo created in this same apply doesn't exist yet when this reads
-# (404); report it as not yet correct so the fix below runs after the
-# repo is created. Any other error still fails the plan.
+# A repo created in this apply 404s here: report it not yet correct so the fix runs after creation.
 data "external" "pr_creation_policy" {
   for_each = local.config
 
@@ -54,10 +36,7 @@ resource "terraform_data" "pr_creation_policy" {
   }
 }
 
-# A repo switching to public in this same apply is still private when
-# this reads, and GitHub rejects the call; report it as not yet correct
-# instead. The fix below runs after the visibility change (it depends on
-# module.repo via the name), so one apply covers both.
+# A repo going public in this apply still reads as private: report it not yet correct, the fix runs after.
 data "external" "fork_pr_approval" {
   for_each = local.public_repositories
 

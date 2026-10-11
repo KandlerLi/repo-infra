@@ -15,8 +15,7 @@ resource "github_repository" "this" {
   allow_auto_merge    = false
 }
 
-# Skipped for archived repos: provider <= v6.13.0 fails the whole plan
-# when it reads this resource on an archived repository.
+# Skipped for archived repos: provider <= v6.13.0 fails the whole plan reading it there.
 resource "github_repository_vulnerability_alerts" "this" {
   count = var.archived ? 0 : 1
 
@@ -29,14 +28,7 @@ moved {
   to   = github_repository_vulnerability_alerts.this[0]
 }
 
-# Found live: a genuinely empty repository has no default branch until its
-# first push, and GitHub just uses whatever branch name that push happens
-# to use -- for aws-budget that was "initial-setup", not "main", even
-# though branch protection below is hardcoded to the "main" pattern.
-# GitHub's API can't set the default branch to one that doesn't exist yet,
-# so a brand-new repo's very first apply may need a second apply (after
-# the first push creates "main") before this actually takes effect --
-# expected, not a bug.
+# A brand-new empty repo may need a second apply once main exists: see README.
 resource "github_branch_default" "this" {
   repository = github_repository.this.name
   branch     = "main"
@@ -107,27 +99,7 @@ resource "github_actions_secret" "additional" {
 
 
 resource "github_repository_environment" "production" {
-  # This "production" environment stays even though its own
-  # required-reviewers gate doesn't anymore (removed 2026-09-07: the
-  # human already reviews the PR and is the only one who ever merges it
-  # -- see the owner's standing rule -- so a second manual approve
-  # click was reviewing nothing a second pair of eyes hadn't already
-  # seen). The environment itself is load-bearing for something
-  # completely different: every apply job's AWS OIDC trust policy
-  # requires the token's sub claim to be
-  # "repo:.../environment:production" (see github_apply_oidc_subject
-  # below) -- that's how it gets to assume its AWS role for the
-  # Terraform state bucket (and, for the AWS-managed repos, real deploy
-  # permissions). Deleting this resource instead of just its reviewers
-  # would break AWS access for every repo that uses it, not remove a
-  # redundant click.
-  #
-  # GitHub's required-reviewers environment protection rule needs a paid
-  # plan for private repositories (fine on the free tier for public repos,
-  # confirmed live -- website/dyndns/testing never hit this). A backup
-  # mirror with no CI/deploy pipeline has no use for a deploy-gating
-  # environment anyway, so this reuses branch_protection_enabled: both
-  # flags together mean "this repo has a real protected release process."
+  # Kept without reviewers: the AWS OIDC trust requires environment:production. See README.
   count = var.branch_protection_enabled ? 1 : 0
 
   environment = "production"
@@ -147,55 +119,22 @@ resource "github_actions_repository_permissions" "this" {
       "actions/checkout@*",
       "aws-actions/configure-aws-credentials@*",
       "hashicorp/setup-terraform@*",
-      # Reusable workflows are governed by this same allowlist, not a
-      # separate mechanism -- a caller's checks.yml migrated to call
-      # gha-common's terraform-checks.yml fails at startup_failure
-      # before running a single step if gha-common isn't in this list.
-      # Every repo this module manages
-      # gets this uniformly, matching sha_pinning_required's own baseline
-      # treatment, since gha-common's reusable workflows are meant to be
-      # callable from any of them.
+      # gha-common's reusable workflows; this allowlist governs reusable workflows too.
       "KandlerLi/gha-common/.github/workflows/terraform-checks.yml@*",
       "KandlerLi/gha-common/.github/workflows/terraform-apply.yml@*",
       "KandlerLi/gha-common/.github/workflows/trivy-config.yml@*",
-      # trivy-image.yml -- a distinct workflow file from trivy-config.yml
-      # above, so it needs its own explicit entry despite living in the
-      # same gha-common repo (this allowlist matches by exact path, not
-      # by owning repository -- learned the hard way during the
-      # trivy-config rollout, see the comments below).
+      # Matched by exact path, so each gha-common workflow needs its own entry.
       "KandlerLi/gha-common/.github/workflows/trivy-image.yml@*",
-      # gitleaks.yml -- same reasoning as trivy-image.yml above. Unlike
-      # trivy-config.yml/trivy-image.yml, this one calls no third-party
-      # action at all beyond actions/checkout (already allowed below) --
-      # the gitleaks binary itself is downloaded and checksum-verified
-      # directly, so there's no nested-action allowlist chain to add
-      # here this time.
       "KandlerLi/gha-common/.github/workflows/gitleaks.yml@*",
-      # trivy-config.yml's own action, not just the reusable workflow
-      # that calls it -- this allowlist governs every action a repo's
-      # workflows transitively run, not only the top-level reusable
-      # workflow reference. Same fix needed for every repo this module
-      # manages, since they all share this list.
+      # Transitively called actions count too, not just the reusable workflow.
       "aquasecurity/trivy-action@*",
-      # trivy-action's own two nested actions -- allowing trivy-action
-      # itself isn't enough, since it in turn calls these two to
-      # install the trivy binary and cache it.
+      # trivy-action's own nested actions.
       "aquasecurity/setup-trivy@*",
       "actions/cache@*",
-      # actions/cache@* alone doesn't cover these -- GitHub matches
-      # each of a repo's separate action.yml entry points (cache,
-      # cache/restore, cache/save) as distinct action references, not
-      # by owning repository. setup-trivy calls these
-      # two specifically, never the bare actions/cache.
+      # Each actions/cache entry point is matched separately.
       "actions/cache/restore@*",
       "actions/cache/save@*",
-      # Used by both gha-common's terraform-checks.yml own "Post plan to
-      # pull request" step and k3s-apps' own duplicate of it (see that
-      # repo's own checks.yml) -- confirmed live: k3s-apps#87's Checks
-      # workflow ran to startup_failure with this action missing from
-      # the list, before running a single step (that repo's unrelated
-      # Security scan workflow, referencing none of these actions,
-      # triggered and ran normally on the same push).
+      # For the plan PR comment in gha-common's terraform-checks.yml and k3s-apps.
       "actions/github-script@*"
     ]
     verified_allowed = false
