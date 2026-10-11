@@ -26,12 +26,21 @@ locals {
   }
 }
 
+# A repo created in this same apply doesn't exist yet when this reads
+# (404); report it as not yet correct so the fix below runs after the
+# repo is created. Any other error still fails the plan.
 data "external" "pr_creation_policy" {
   for_each = local.config
 
   program = [
-    "gh", "api", "repos/${local.github_owner}/${module.repo[each.key].name}",
-    "--jq", "{policy: (.pull_request_creation_policy // \"unknown\")}",
+    "sh", "-c", <<-EOT
+      repo="repos/${local.github_owner}/${module.repo[each.key].name}"
+      if gh api "$repo" --silent 2>&1 | grep -q "HTTP 404"; then
+        echo '{"policy": "repository missing"}'
+      else
+        gh api "$repo" --jq '{policy: (.pull_request_creation_policy // "unknown")}'
+      fi
+    EOT
   ]
 }
 
