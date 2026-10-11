@@ -110,7 +110,7 @@ resource "github_repository_environment" "production" {
   # This "production" environment stays even though its own
   # required-reviewers gate doesn't anymore (removed 2026-09-07: the
   # human already reviews the PR and is the only one who ever merges it
-  # -- see CLAUDE.md's own standing rule -- so a second manual approve
+  # -- see the owner's standing rule -- so a second manual approve
   # click was reviewing nothing a second pair of eyes hadn't already
   # seen). The environment itself is load-bearing for something
   # completely different: every apply job's AWS OIDC trust policy

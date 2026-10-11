@@ -10,7 +10,7 @@
 # - AWS credentials for the repo-infra-local IAM identity, in pass at
 #   aws/repo-infra-local/access-key-id and .../secret-access-key -- see
 #   this repo's own README.md, "First apply" section in
-#   bootstrap/terraform-state/README.md's "repo-infra-local Identity"
+#   KandlerLi/terraform-state/README.md's "repo-infra-local Identity"
 #   for how those got there in the first place.
 # - `gh` already authenticated locally (GITHUB_TOKEN comes from
 #   `gh auth token`, not a new credential).
@@ -38,10 +38,10 @@ fail() {
 }
 
 access_key_id="$(pass show aws/repo-infra-local/access-key-id 2>/dev/null | head -1 || true)"
-[ -n "${access_key_id}" ] || fail "pass entry aws/repo-infra-local/access-key-id is empty or missing -- see bootstrap/terraform-state/README.md's 'repo-infra-local Identity' section"
+[ -n "${access_key_id}" ] || fail "pass entry aws/repo-infra-local/access-key-id is empty or missing -- see KandlerLi/terraform-state/README.md's 'repo-infra-local Identity' section"
 
 secret_access_key="$(pass show aws/repo-infra-local/secret-access-key 2>/dev/null | head -1 || true)"
-[ -n "${secret_access_key}" ] || fail "pass entry aws/repo-infra-local/secret-access-key is empty or missing -- see bootstrap/terraform-state/README.md's 'repo-infra-local Identity' section"
+[ -n "${secret_access_key}" ] || fail "pass entry aws/repo-infra-local/secret-access-key is empty or missing -- see KandlerLi/terraform-state/README.md's 'repo-infra-local Identity' section"
 
 github_token="$(gh auth token 2>/dev/null || true)"
 [ -n "${github_token}" ] || fail "gh auth token returned nothing -- run 'gh auth login' first"
@@ -59,7 +59,7 @@ terraform validate
 # 2026-09-08: a missing/unexported required variable otherwise drops
 # into an interactive "var.foo" prompt instead of failing outright.
 # This repo has no root-level variables left as of the SOPS-to-
-# Secrets-Manager cutover (PARKED.md), but kept as a cheap general
+# Secrets-Manager cutover, but kept as a cheap general
 # safety default rather than removed along with that scenario.
 terraform plan -input=false
 
