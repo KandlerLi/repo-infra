@@ -17,6 +17,11 @@ archived `home-infra-ai-context`. Self-hosted runners, required checks and
 AWS deploy roles are set per entry. What each repo is for:
 [`home-infra-docs`' `repositories.md`](https://github.com/KandlerLi/home-infra-docs/blob/main/docs/repositories.md).
 
+`home-infra-tracker`'s issue labels are managed in `tracker.tf` with the
+authoritative `github_issue_labels`: any label that exists only on GitHub is
+deleted by the next apply, and with it from every issue (it happened on
+2026-10-26). Add a label here first, then use it.
+
 Branch protection is a **hardcoded baseline applied to every managed
 repository**, not opt-in — every `config.yml` entry gets one, matching the
 existing hardcoded-for-everyone treatment of `sha_pinning_required`. The one
