@@ -90,9 +90,10 @@ k3s-apps:
     - "Terraform plan"
     - "trivy-config / Trivy config scan"
 
-# Protection off only until the first push creates main (it requires PRs): enabled in a follow-up apply.
+# GitHub-hosted CI only: no AWS, no runner, nothing to deploy.
 terraform-provider-fritzbox:
-  branch_protection_enabled: false
+  required_status_check_contexts:
+    - "Go test"
 
 # Private: a map of the home network. Free plan: private repos get no branch protection.
 fritzbox:
