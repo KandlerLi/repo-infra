@@ -12,8 +12,9 @@ absorbing what was previously a separate `aws-account-bootstrap` root.
 Managed repositories are declared in `config.yml`. Each key becomes a GitHub
 repository managed through the shared `./modules/repo` module. Every repo
 in the workspace is there: public with full branch protection, except
-`home-infra-tracker` (private, no code, no branch protection) and the
-archived `home-infra-ai-context`. Self-hosted runners, required checks and
+`home-infra-tracker` (private, no code, no branch protection), `fritzbox`
+(private; GitHub's free plan offers no branch protection on private repos)
+and the archived `home-infra-ai-context`. Self-hosted runners, required checks and
 AWS deploy roles are set per entry. What each repo is for:
 [`home-infra-docs`' `repositories.md`](https://github.com/KandlerLi/home-infra-docs/blob/main/docs/repositories.md).
 

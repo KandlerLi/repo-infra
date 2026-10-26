@@ -89,3 +89,12 @@ k3s-apps:
     - "Validate"
     - "Terraform plan"
     - "trivy-config / Trivy config scan"
+
+# Protection off only until the first push creates main (it requires PRs): enabled in a follow-up apply.
+terraform-provider-fritzbox:
+  branch_protection_enabled: false
+
+# Private: a map of the home network. Free plan: private repos get no branch protection.
+fritzbox:
+  visibility: private
+  branch_protection_enabled: false
