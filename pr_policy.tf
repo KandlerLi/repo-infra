@@ -36,14 +36,16 @@ resource "terraform_data" "pr_creation_policy" {
   }
 }
 
-# A repo going public in this apply still reads as private: report it not yet correct, the fix runs after.
+# A repo created or going public in this apply 404s or reads private: report it not yet correct, the fix runs after.
 data "external" "fork_pr_approval" {
   for_each = local.public_repositories
 
   program = [
     "sh", "-c", <<-EOT
       repo="repos/${local.github_owner}/${module.repo[each.key].name}"
-      if [ "$(gh api "$repo" --jq .private)" = "true" ]; then
+      if gh api "$repo" --silent 2>&1 | grep -q "HTTP 404"; then
+        echo '{"policy": "repository missing"}'
+      elif [ "$(gh api "$repo" --jq .private)" = "true" ]; then
         echo '{"policy": "repository still private"}'
       else
         gh api "$repo/actions/permissions/fork-pr-contributor-approval" --jq '{policy: .approval_policy}'
