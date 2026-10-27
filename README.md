@@ -128,22 +128,21 @@ skips every AWS resource for it.
 
 ## Adding a repository with a self-hosted GitHub Actions runner
 
-The runner VM itself is provisioned and configured by `home-infra`'s
-`github_runner` Ansible role, entirely separately from this Terraform root.
-This root only holds the `runner: true` convention key that tells
-`home-infra` which repositories should get one:
+The runners themselves are k3s Pods from [`k3s-bootstrap`](https://github.com/KandlerLi/k3s-bootstrap)'s
+`modules/github_runner`, entirely separate from this Terraform root. This
+root only holds the `runner: true` convention key that says which
+repositories get one:
 
 1. Add `runner: true` to the repository's entry in `config.yml`.
 2. In [`home-infra`](https://github.com/KandlerLi/home-infra), run
-   `.venv/bin/python scripts/sync_github_runner_repositories.py`. This
-   regenerates
-   `ansible/inventory/group_vars/all/github_runner_repositories.yml` from
-   every `config.yml` entry with `runner: true`.
-3. Review the diff and commit it in `home-infra`.
-4. Run the `github-runner.yml` playbook to register and start the runner
-   process for the new repository (it registers each repository's runner
-   with its own service user/systemd unit on the shared runner VM — see that
-   role's `defaults/main.yml` for details).
+   `.venv/bin/python scripts/sync_github_runner_repositories.py`. It
+   regenerates `k3s-bootstrap`'s `repositories.auto.tfvars.json` and
+   `home-infra`'s `ansible/inventory/group_vars/all/github_runner_repositories.yml`
+   (the GitHub runner exporter's repo list).
+3. Commit each diff in its own repo; apply `k3s-bootstrap`.
+4. Add the repository to the GitHub runner exporter's fine-grained token
+   (`secrets-manager`'s `home-infra/prometheus` runbook), then run
+   `home-infra`'s `site.yml`.
 
 This is a two-tool workflow by design: Terraform manages declarative GitHub/
 AWS state, but attaching a runner process to a repository is imperative and
