@@ -76,3 +76,9 @@ variable "github_owner_id" {
   type        = string
   default     = "24520951"
 }
+
+variable "extra_allowed_actions" {
+  description = "Actions this repo may use on top of the shared allowlist in main.tf, e.g. \"owner/action@*\"."
+  type        = list(string)
+  default     = []
+}
