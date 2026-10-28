@@ -18,8 +18,9 @@ module "repo" {
 
   for_each = local.config
 
-  repository_name  = each.key
-  action_variables = try(each.value.action_variables, {})
+  repository_name       = each.key
+  action_variables      = try(each.value.action_variables, {})
+  extra_allowed_actions = try(each.value.extra_allowed_actions, [])
   # Empty: no consumer left; kept for the next repo that needs a real Actions secret.
   action_secrets                 = {}
   required_status_check_contexts = try(each.value.required_status_check_contexts, [])

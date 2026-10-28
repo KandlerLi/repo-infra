@@ -188,7 +188,9 @@ including in `k3s-apps`, whose own inline checks are un-prefixed.
 ## GitHub Actions allowlist notes
 
 `github_actions_repository_permissions` allows the same list of actions
-in every managed repository. What it took to get that list right:
+in every managed repository, plus that repo's own `extra_allowed_actions`
+from `config.yml` (only `renovate` has any). What it took to get that
+list right:
 
 - Reusable workflows are governed by the same allowlist. A caller of a
   gha-common workflow missing from the list fails with `startup_failure`

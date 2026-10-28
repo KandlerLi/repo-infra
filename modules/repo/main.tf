@@ -115,7 +115,7 @@ resource "github_actions_repository_permissions" "this" {
   sha_pinning_required = true
   allowed_actions_config {
     github_owned_allowed = false
-    patterns_allowed = [
+    patterns_allowed = concat([
       "actions/checkout@*",
       "aws-actions/configure-aws-credentials@*",
       "hashicorp/setup-terraform@*",
@@ -136,7 +136,7 @@ resource "github_actions_repository_permissions" "this" {
       "actions/cache/save@*",
       # For the plan PR comment in gha-common's terraform-checks.yml and k3s-apps.
       "actions/github-script@*"
-    ]
+    ], var.extra_allowed_actions)
     verified_allowed = false
   }
   repository = github_repository.this.name

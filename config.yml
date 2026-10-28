@@ -92,8 +92,10 @@ k3s-apps:
 
 # Scheduled Renovate on GitHub-hosted runners; its apply role only reads the App credentials. Tracker #42.
 renovate:
-  # Off until the first push creates main; protection requires checks that can't exist before. Then removed.
-  branch_protection_enabled: false
+  extra_allowed_actions:
+    - "actions/setup-node@*"
+    - "actions/create-github-app-token@*"
+    - "renovatebot/github-action@*"
   required_status_check_contexts:
     - "Validate Renovate config"
     - "gitleaks / Gitleaks secret scan"
