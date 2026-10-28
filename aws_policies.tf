@@ -60,6 +60,7 @@ locals {
         "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/*",
         "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:dyndns/*",
         "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:fritzbox/*",
+        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:renovate/*",
       ]
     },
   ]
@@ -835,6 +836,20 @@ locals {
         local.secrets_manager_rotation_check_statement,
       )
       plan_policy_statements = local.secrets_manager_statements
+    }
+
+    # No Terraform: the role only reads the App credentials at run time. state_key is the module's baseline, never written.
+    renovate = {
+      state_key = "renovate/terraform.tfstate"
+      apply_policy_statements = [
+        {
+          Sid      = "ReadRenovateGitHubApp"
+          Effect   = "Allow"
+          Action   = "secretsmanager:GetSecretValue"
+          Resource = "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:renovate/github-app-*"
+        },
+      ]
+      plan_policy_statements = []
     }
   }
 }
