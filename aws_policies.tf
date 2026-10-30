@@ -838,7 +838,7 @@ locals {
       plan_policy_statements = local.secrets_manager_statements
     }
 
-    # No Terraform: the role only reads the App credentials at run time. state_key is the module's baseline, never written.
+    # No Terraform: the role only reads the App credentials and the GHCR pull token at run time. state_key is the module's baseline, never written.
     renovate = {
       state_key = "renovate/terraform.tfstate"
       apply_policy_statements = [
@@ -847,6 +847,13 @@ locals {
           Effect   = "Allow"
           Action   = "secretsmanager:GetSecretValue"
           Resource = "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:renovate/github-app-*"
+        },
+        {
+          # Renovate looks up new digests of the private ghcr.io/kandlerli images (tracker #46).
+          Sid      = "ReadGhcrPullToken"
+          Effect   = "Allow"
+          Action   = "secretsmanager:GetSecretValue"
+          Resource = "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/ghcr-pull-token-*"
         },
       ]
       plan_policy_statements = []
