@@ -42,19 +42,23 @@ ses-relay:
 home-infra:
   required_status_check_contexts:
     - "Validate"
+    - "rollout-ack / Rollout acknowledged"
   runner: true
 
 repo-infra:
   required_status_check_contexts:
     - "trivy-config / Trivy config scan"
+    - "rollout-ack / Rollout acknowledged"
 
 terraform-state:
   required_status_check_contexts:
     - "trivy-config / Trivy config scan"
+    - "rollout-ack / Rollout acknowledged"
 
 k3s-bootstrap:
   required_status_check_contexts:
     - "trivy-config / Trivy config scan"
+    - "rollout-ack / Rollout acknowledged"
 
 secrets-manager:
   visibility: public
