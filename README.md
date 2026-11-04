@@ -308,3 +308,7 @@ entries get created) and `GITHUB_TOKEN` from `gh auth token`, runs
 `terraform apply` (left interactive -- Terraform's own plan-and-confirm
 prompt is the review step). Everything it exports lives only inside the
 script's own process; nothing persists in the calling shell afterward.
+
+After merging a PR, `scripts/update.sh plan`/`apply` switches to a fresh
+`main`, refusing a dirty tree, and runs `roll-out.sh` with the same arguments.
+`terraform init` there picks up changed provider and module versions.
