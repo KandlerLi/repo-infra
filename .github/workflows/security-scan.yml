@@ -10,13 +10,13 @@ on:
 
 jobs:
   trivy-config:
-    uses: KandlerLi/gha-common/.github/workflows/trivy-config.yml@v0.0.15
+    uses: KandlerLi/gha-common/.github/workflows/trivy-config.yml@v0.0.17
     with:
       runs_on: '["ubuntu-latest"]'
     permissions:
       contents: read
 
   gitleaks:
-    uses: KandlerLi/gha-common/.github/workflows/gitleaks.yml@v0.0.15
+    uses: KandlerLi/gha-common/.github/workflows/gitleaks.yml@v0.0.17
     permissions:
       contents: read
