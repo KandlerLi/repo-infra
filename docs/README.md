@@ -139,8 +139,13 @@ repositories get one:
    regenerates `k3s-bootstrap`'s `repositories.auto.tfvars.json` and
    `home-infra`'s `ansible/inventory/group_vars/all/github_runner_repositories.yml`
    (the GitHub runner exporter's repo list).
-3. Commit each diff in its own repo; apply `k3s-bootstrap`.
-4. Add the repository to the GitHub runner exporter's fine-grained token
+3. Add the repository to the runner GitHub App's installation (GitHub →
+   Settings → Applications → Installed GitHub Apps → the runner App →
+   Configure → Repository access). It is installed on selected
+   repositories only; without this, the scale set stays `Pending` and ARC
+   logs a 403 on `actions/runners/registration-token`.
+4. Commit each diff in its own repo; apply `k3s-bootstrap`.
+5. Add the repository to the GitHub runner exporter's fine-grained token
    (`secrets-manager`'s `home-infra/prometheus` runbook), then run
    `home-infra`'s `site.yml`.
 
