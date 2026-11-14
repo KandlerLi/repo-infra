@@ -85,6 +85,15 @@ home-infra-ai-context:
   branch_protection_enabled: false
   archived: true
 
+# Stalwart's runtime settings through its API, split out of k3s-apps; the runner reaches only that API.
+stalwart-config:
+  visibility: public
+  runner: true
+  required_status_check_contexts:
+    - "Validate"
+    - "Terraform plan"
+    - "trivy-config / Trivy config scan"
+
 k3s-apps:
   visibility: public
   runner: true
