@@ -36,6 +36,15 @@ locals {
   ]
 
   # Apply-only, in its own statement: a leaked token can write exactly this one secret.
+  stalwart_config_secretsmanager_read_statements = [
+    {
+      Sid      = "ReadStalwartSecret"
+      Effect   = "Allow"
+      Action   = ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"]
+      Resource = "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/stalwart-*"
+    },
+  ]
+
   k3s_apps_blocky_rotation_statement = [
     {
       Sid      = "RotateBlockyPostgresPassword"
@@ -85,6 +94,13 @@ locals {
         local.k3s_apps_blocky_rotation_statement,
       )
       plan_policy_statements = local.k3s_apps_secretsmanager_read_statements
+    }
+
+    # No AWS resources: state access and the one secret group with Stalwart's API token and SES username.
+    stalwart-config = {
+      state_key               = "stalwart-config/terraform.tfstate"
+      apply_policy_statements = local.stalwart_config_secretsmanager_read_statements
+      plan_policy_statements  = local.stalwart_config_secretsmanager_read_statements
     }
 
     dyndns = {
