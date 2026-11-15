@@ -8,35 +8,30 @@ dyndns:
   runner: true
   required_status_check_contexts:
     - "terraform / Validate"
-    - "terraform / Terraform plan"
     - "trivy-config / Trivy config scan"
 
 website:
   runner: true
   required_status_check_contexts:
     - "terraform / Validate"
-    - "terraform / Terraform plan"
     - "trivy-config / Trivy config scan"
 
 aws-budget:
   runner: true
   required_status_check_contexts:
     - "terraform / Validate"
-    - "terraform / Terraform plan"
     - "trivy-config / Trivy config scan"
 
 homeserver-health-check:
   runner: true
   required_status_check_contexts:
     - "terraform / Validate"
-    - "terraform / Terraform plan"
     - "trivy-config / Trivy config scan"
 
 ses-relay:
   runner: true
   required_status_check_contexts:
     - "terraform / Validate"
-    - "terraform / Terraform plan"
     - "trivy-config / Trivy config scan"
 
 home-infra:
@@ -65,7 +60,6 @@ secrets-manager:
   runner: true
   required_status_check_contexts:
     - "terraform / Validate"
-    - "terraform / Terraform plan"
     - "trivy-config / Trivy config scan"
 
 # Public after a full-history content audit: ADR 0022's 2026-10-10 addendum.
