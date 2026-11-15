@@ -246,10 +246,7 @@ The action stays exactly `ses:SendEmail`.
 
 **Design choices.**
 
-- `k3s-apps` gets the same secret reads for plan and apply: the values
-  flow into its Terraform, so a plan needs `GetSecretValue` too.
-- Write access for scheduled jobs (the blocky password rotation, the
-  rotation reminder) is apply-only and in its own statement, so a leaked
+- Write access for scheduled jobs (the rotation reminder) is apply-only and in its own statement, so a leaked
   token reaches exactly that one permission.
 - `secrets-manager`'s CI only creates and describes empty containers
   under its three name prefixes, never touching a secret value.

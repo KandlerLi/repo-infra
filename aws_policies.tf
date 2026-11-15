@@ -8,33 +8,6 @@ data "aws_kms_alias" "shared" {
 locals {
   aws_region = "eu-central-1"
 
-  # Same for plan and apply: the values flow into k3s-apps' Terraform, so a plan needs GetSecretValue too.
-  k3s_apps_secretsmanager_read_statements = [
-    {
-      Sid    = "ReadSecretsManagerSecrets"
-      Effect = "Allow"
-      Action = [
-        "secretsmanager:GetSecretValue",
-        "secretsmanager:DescribeSecret",
-      ]
-      Resource = [
-        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/authelia-*",
-        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/grafana-*",
-        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/open-webui-*",
-        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/ingress-*",
-        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/home-agent-*",
-        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/monitoring-*",
-        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/blocky-*",
-        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/sankey-export-*",
-        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/ghcr-pull-token-*",
-        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/bulwark-*",
-        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/stalwart-*",
-        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/paperless-*",
-        "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/vaultwarden-*",
-      ]
-    },
-  ]
-
   # Apply-only, in its own statement: a leaked token can write exactly this one secret.
   stalwart_config_secretsmanager_read_statements = [
     {
@@ -42,15 +15,6 @@ locals {
       Effect   = "Allow"
       Action   = ["secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret"]
       Resource = "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:k3s-apps/stalwart-*"
-    },
-  ]
-
-  k3s_apps_blocky_rotation_statement = [
-    {
-      Sid      = "RotateBlockyPostgresPassword"
-      Effect   = "Allow"
-      Action   = "secretsmanager:PutSecretValue"
-      Resource = "arn:aws:secretsmanager:${local.aws_region}:${data.aws_caller_identity.current.account_id}:secret:home-infra/blocky-*"
     },
   ]
 
@@ -86,16 +50,6 @@ locals {
   ]
 
   aws_policies = {
-    # No AWS resources of its own: state access, secret reads and the apply-only blocky rotation write.
-    k3s-apps = {
-      state_key = "k3s-apps/terraform.tfstate"
-      apply_policy_statements = concat(
-        local.k3s_apps_secretsmanager_read_statements,
-        local.k3s_apps_blocky_rotation_statement,
-      )
-      plan_policy_statements = local.k3s_apps_secretsmanager_read_statements
-    }
-
     # No AWS resources: state access and the one secret group with Stalwart's API token and SES username.
     stalwart-config = {
       state_key               = "stalwart-config/terraform.tfstate"
