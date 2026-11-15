@@ -181,7 +181,7 @@ repositories exist and what they get.
 
 A repository whose `checks.yml` calls a gha-common reusable workflow from
 a job named `terraform` reports its check as `terraform / Validate` (validate and plan
-run in that one job since gha-common v0.0.18): GitHub prefixes a reusable workflow's jobs
+run in that one job since gha-common v1.0.0): GitHub prefixes a reusable workflow's jobs
 with the caller job's id in every check context. Listing the un-prefixed
 names in `required_status_check_contexts` leaves a PR green but
 unmergeable, waiting for checks no run will ever report (found live on
