@@ -180,8 +180,9 @@ resource "aws_iam_role" "apply" {
     }]
   })
 
+  # false for one apply only, to delete k3s-apps' roles (decisions.md, 2026-11-15); the next PR restores true.
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }
 
@@ -206,8 +207,9 @@ resource "aws_iam_role" "plan" {
     }]
   })
 
+  # false for one apply only, like the apply role above.
   lifecycle {
-    prevent_destroy = true
+    prevent_destroy = false
   }
 }
 

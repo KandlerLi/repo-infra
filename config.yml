@@ -94,13 +94,13 @@ stalwart-config:
     - "Terraform plan"
     - "trivy-config / Trivy config scan"
 
+# Argo CD manifests, no Terraform since 2026-11-15 (ADR 0032); the runner only builds sankey-export's image.
 k3s-apps:
   visibility: public
   runner: true
-  # Prefixed, unlike its inline checks: the scan runs through gha-common's reusable workflow.
+  # Prefixed, unlike its inline check: the scan runs through gha-common's reusable workflow.
   required_status_check_contexts:
     - "Validate"
-    - "Terraform plan"
     - "trivy-config / Trivy config scan"
 
 # Scheduled Renovate on GitHub-hosted runners; its apply role only reads the App credentials. Tracker #42.
