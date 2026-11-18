@@ -43,4 +43,10 @@ resource "github_issue_labels" "tracker" {
     color       = "1d76db"
     description = "Affected by or depends on the move to the new SSD (VM disks off the HDD)"
   }
+
+  label {
+    name        = "account recovery"
+    color       = "b60205"
+    description = "Not getting locked out: 2FA fallback, break-glass access, credential backups and restore drills"
+  }
 }
