@@ -5,31 +5,26 @@ gha-common: {}
 
 # "terraform / " prefix: GitHub names a reusable workflow's jobs after the caller job. See README.
 dyndns:
-  runner: true
   required_status_check_contexts:
     - "terraform / Validate"
     - "trivy-config / Trivy config scan"
 
 website:
-  runner: true
   required_status_check_contexts:
     - "terraform / Validate"
     - "trivy-config / Trivy config scan"
 
 aws-budget:
-  runner: true
   required_status_check_contexts:
     - "terraform / Validate"
     - "trivy-config / Trivy config scan"
 
 homeserver-health-check:
-  runner: true
   required_status_check_contexts:
     - "terraform / Validate"
     - "trivy-config / Trivy config scan"
 
 ses-relay:
-  runner: true
   required_status_check_contexts:
     - "terraform / Validate"
     - "trivy-config / Trivy config scan"
@@ -38,7 +33,6 @@ home-infra:
   required_status_check_contexts:
     - "Validate"
     - "rollout-ack / Rollout acknowledged"
-  runner: true
 
 repo-infra:
   required_status_check_contexts:
@@ -57,7 +51,6 @@ k3s-bootstrap:
 
 secrets-manager:
   visibility: public
-  runner: true
   required_status_check_contexts:
     - "terraform / Validate"
     - "trivy-config / Trivy config scan"
@@ -88,10 +81,9 @@ stalwart-config:
     - "Terraform plan"
     - "trivy-config / Trivy config scan"
 
-# Argo CD manifests, no Terraform since 2026-11-15 (ADR 0032); the runner only builds sankey-export's image.
+# Argo CD manifests, no Terraform since 2026-11-15 (ADR 0032).
 k3s-apps:
   visibility: public
-  runner: true
   # Prefixed, unlike its inline check: the scan runs through gha-common's reusable workflow.
   required_status_check_contexts:
     - "Validate"
